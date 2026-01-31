@@ -5,7 +5,7 @@
 @section('content')
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">
-        <i class="fas fa-edit me-2"></i>Editar Cliente
+        <i class="fas fa-edit me-2"></i>Editar Cliente: {{ $cliente->nombre }} {{ $cliente->apellido_paterno }} {{ $cliente->apellido_materno }}
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
@@ -19,162 +19,1230 @@
     </div>
 </div>
 
-<!-- Información del cliente -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Información actual:</h6>
-                <p class="mb-1"><strong>No. Cliente:</strong> {{ $cliente->no_cliente ?? 'N/A' }}</p>
-                <p class="mb-1"><strong>Cliente desde:</strong> {{ $cliente->creado_en ? $cliente->creado_en->format('d/m/Y') : 'N/A' }}</p>
-                <p class="mb-0"><strong>Última actualización:</strong> {{ $cliente->actualizado_en ? $cliente->actualizado_en->format('d/m/Y H:i') : 'N/A' }}</p>
-            </div>
-            <div class="col-md-6">
-                <h6>Estatus actual:</h6>
-                @php
-                    $badgeClass = 'badge-pendiente';
-                    if($cliente->estatus == 'Activo') $badgeClass = 'badge-activo';
-                    elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge-suspendido';
-                @endphp
-                <span class="badge-estatus {{ $badgeClass }}">
-                    {{ $cliente->estatus }}
-                </span>
-            </div>
-        </div>
-    </div>
+@if($cliente->tipo_cliente !== 'C')
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Advertencia:</strong> Solo los clientes tipo "Cliente" pueden ser editados completamente. 
+    Este cliente es de tipo "{{ $cliente->tipo_cliente_completo ?? $cliente->tipo_cliente }}".
 </div>
+@endif
 
-<!-- Formulario de edición -->
-<div class="card">
-    <div class="card-body">
-        <form action="{{ route('clientes.update', $cliente) }}" method="POST">
-            @include('clientes._form')
-        </form>
+<form action="{{ route('clientes.update', $cliente) }}" method="POST">
+    @csrf
+    @method('PUT')
+    
+    <!-- Sección 1: Información Actual -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i> Información actual:
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label"><strong>No. Cliente:</strong></label>
+                    <p class="form-control-plaintext">{{ $cliente->no_cliente ?? 'N/A' }}</p>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label"><strong>Cliente desde:</strong></label>
+                    <p class="form-control-plaintext">
+                        {{ $cliente->fecha_contrato ? $cliente->fecha_contrato->format('d/m/Y') : 'N/A' }}
+                    </p>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label"><strong>Fecha Captura:</strong></label>
+                    <p class="form-control-plaintext">
+                        {{ $cliente->creado_en ? $cliente->creado_en->format('d/m/Y H:i') : 'N/A' }}
+                    </p>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label"><strong>Última actualización:</strong></label>
+                    <p class="form-control-plaintext">
+                        {{ $cliente->actualizado_en ? $cliente->actualizado_en->format('d/m/Y H:i') : 'N/A' }}
+                    </p>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label"><strong>Estatus actual:</strong></label>
+                    <p class="form-control-plaintext">
+                        @php
+                            $badgeClass = 'badge-secondary';
+                            if($cliente->estatus == 'Activo') $badgeClass = 'badge-success';
+                            elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge-warning';
+                            elseif($cliente->estatus == 'Terminado') $badgeClass = 'badge-info';
+                            elseif($cliente->estatus == 'Baja') $badgeClass = 'badge-danger';
+                        @endphp
+                        <span class="badge {{ $badgeClass }}">{{ $cliente->estatus }}</span>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Datos que se pueden editar -->
+            <h6 class="mt-3 mb-3 text-primary">Datos que se pueden editar (los que llevan * son obligatorios):</h6>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="tipo_cliente" class="form-label">
+                        Tipo de Cliente <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('tipo_cliente') is-invalid @enderror" 
+                            id="tipo_cliente" 
+                            name="tipo_cliente" 
+                            required
+                            {{ $cliente->tipo_cliente !== 'C' ? 'disabled' : '' }}>
+                        <option value="">Seleccionar...</option>
+                        <option value="C" {{ old('tipo_cliente', $cliente->tipo_cliente) == 'C' ? 'selected' : '' }}>Cliente</option>
+                        <option value="P" {{ old('tipo_cliente', $cliente->tipo_cliente) == 'P' ? 'selected' : '' }}>Prospecto</option>
+                        <option value="S" {{ old('tipo_cliente', $cliente->tipo_cliente) == 'S' ? 'selected' : '' }}>Suspendido</option>
+                        <option value="B" {{ old('tipo_cliente', $cliente->tipo_cliente) == 'B' ? 'selected' : '' }}>Baja</option>
+                        <option value="I" {{ old('tipo_cliente', $cliente->tipo_cliente) == 'I' ? 'selected' : '' }}>Imposible</option>
+                    </select>
+                    @error('tipo_cliente')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="estatus" class="form-label">
+                        Estatus <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('estatus') is-invalid @enderror" 
+                            id="estatus" 
+                            name="estatus" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Activo" {{ old('estatus', $cliente->estatus) == 'Activo' ? 'selected' : '' }}>Activo</option>
+                        <option value="Suspendido" {{ old('estatus', $cliente->estatus) == 'Suspendido' ? 'selected' : '' }}>Suspendido</option>
+                        <option value="Terminado" {{ old('estatus', $cliente->estatus) == 'Terminado' ? 'selected' : '' }}>Terminado</option>
+                        <option value="Baja" {{ old('estatus', $cliente->estatus) == 'Baja' ? 'selected' : '' }}>Baja</option>
+                    </select>
+                    @error('estatus')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+    
+    <!-- Sección 2: Datos Personales -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-user me-2"></i> Datos Personales
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3 mb-3">
+                    <label for="nombre" class="form-label">
+                        Nombre <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nombre') is-invalid @enderror" 
+                           id="nombre" 
+                           name="nombre" 
+                           value="{{ old('nombre', $cliente->nombre) }}" 
+                           required>
+                    @error('nombre')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="apellido_paterno" class="form-label">
+                        Apellido Paterno <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('apellido_paterno') is-invalid @enderror" 
+                           id="apellido_paterno" 
+                           name="apellido_paterno" 
+                           value="{{ old('apellido_paterno', $cliente->apellido_paterno) }}" 
+                           required>
+                    @error('apellido_paterno')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="apellido_materno" class="form-label">
+                        Apellido Materno <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('apellido_materno') is-invalid @enderror" 
+                           id="apellido_materno" 
+                           name="apellido_materno" 
+                           value="{{ old('apellido_materno', $cliente->apellido_materno) }}" 
+                           required>
+                    @error('apellido_materno')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="fecha_nacimiento" class="form-label">
+                        Fecha de Nacimiento <span class="text-danger">*</span>
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_nacimiento') is-invalid @enderror" 
+                           id="fecha_nacimiento" 
+                           name="fecha_nacimiento" 
+                           value="{{ old('fecha_nacimiento', $cliente->fecha_nacimiento ? $cliente->fecha_nacimiento->format('Y-m-d') : '') }}" 
+                           required>
+                    @error('fecha_nacimiento')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-3 mb-3">
+                    <label for="curp" class="form-label">
+                        CURP <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('curp') is-invalid @enderror" 
+                           id="curp" 
+                           name="curp" 
+                           value="{{ old('curp', $curps[0] ?? '') }}" 
+                           maxlength="18"
+                           required>
+                    @error('curp')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="curp2" class="form-label">
+                        CURP2 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('curp2') is-invalid @enderror" 
+                           id="curp2" 
+                           name="curp2" 
+                           value="{{ old('curp2', $curps[1] ?? '') }}" 
+                           maxlength="18">
+                    @error('curp2')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="curp3" class="form-label">
+                        CURP3 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('curp3') is-invalid @enderror" 
+                           id="curp3" 
+                           name="curp3" 
+                           value="{{ old('curp3', $curps[2] ?? '') }}" 
+                           maxlength="18">
+                    @error('curp3')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-3 mb-3">
+                    <label for="rfc" class="form-label">
+                        RFC <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('rfc') is-invalid @enderror" 
+                           id="rfc" 
+                           name="rfc" 
+                           value="{{ old('rfc', $rfcs[0] ?? '') }}" 
+                           maxlength="13"
+                           required>
+                    @error('rfc')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="rfc2" class="form-label">
+                        RFC2 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('rfc2') is-invalid @enderror" 
+                           id="rfc2" 
+                           name="rfc2" 
+                           value="{{ old('rfc2', $rfcs[1] ?? '') }}" 
+                           maxlength="13">
+                    @error('rfc2')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="fecha_contrato" class="form-label">
+                        Fecha Contrato <span class="text-danger">*</span>
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_contrato') is-invalid @enderror" 
+                           id="fecha_contrato" 
+                           name="fecha_contrato" 
+                           value="{{ old('fecha_contrato', $cliente->fecha_contrato ? $cliente->fecha_contrato->format('Y-m-d') : '') }}" 
+                           required>
+                    @error('fecha_contrato')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="cliente_referidor_id" class="form-label">
+                        Referencia <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('cliente_referidor_id') is-invalid @enderror" 
+                            id="cliente_referidor_id" 
+                            name="cliente_referidor_id">
+                        <option value="">N/A</option>
+                        @foreach($clientesReferencia ?? [] as $clienteRef)
+                            <option value="{{ $clienteRef->id }}" {{ old('cliente_referidor_id', $cliente->cliente_referidor_id) == $clienteRef->id ? 'selected' : '' }}>
+                                {{ $clienteRef->nombre_completo }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('cliente_referidor_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sección 3: Datos de Contacto -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-address-book me-2"></i> Datos de Contacto
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="celular1" class="form-label">
+                        Celular1 <span class="text-danger">*</span>
+                    </label>
+                    <input type="tel" 
+                           class="form-control @error('celular1') is-invalid @enderror" 
+                           id="celular1" 
+                           name="celular1" 
+                           value="{{ old('celular1', $contactos['celular1'] ?? '') }}" 
+                           maxlength="15"
+                           required>
+                    @error('celular1')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="celular2" class="form-label">
+                        Celular2 (opcional)
+                    </label>
+                    <input type="tel" 
+                           class="form-control @error('celular2') is-invalid @enderror" 
+                           id="celular2" 
+                           name="celular2" 
+                           value="{{ old('celular2', $contactos['celular2'] ?? '') }}" 
+                           maxlength="15">
+                    @error('celular2')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="tel_casa" class="form-label">
+                        TelCasa (opcional)
+                    </label>
+                    <input type="tel" 
+                           class="form-control @error('tel_casa') is-invalid @enderror" 
+                           id="tel_casa" 
+                           name="tel_casa" 
+                           value="{{ old('tel_casa', $contactos['tel_casa'] ?? '') }}" 
+                           maxlength="15">
+                    @error('tel_casa')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="correo1" class="form-label">
+                        Correo1 (opcional)
+                    </label>
+                    <input type="email" 
+                           class="form-control @error('correo1') is-invalid @enderror" 
+                           id="correo1" 
+                           name="correo1" 
+                           value="{{ old('correo1', $contactos['correo1'] ?? '') }}">
+                    @error('correo1')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="correo2" class="form-label">
+                        Correo2 (opcional)
+                    </label>
+                    <input type="email" 
+                           class="form-control @error('correo2') is-invalid @enderror" 
+                           id="correo2" 
+                           name="correo2" 
+                           value="{{ old('correo2', $contactos['correo2'] ?? '') }}">
+                    @error('correo2')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="correo_personal" class="form-label">
+                        CorreoPersonal (opcional)
+                    </label>
+                    <input type="email" 
+                           class="form-control @error('correo_personal') is-invalid @enderror" 
+                           id="correo_personal" 
+                           name="correo_personal" 
+                           value="{{ old('correo_personal', $contactos['correo_personal'] ?? '') }}">
+                    @error('correo_personal')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sección 4: Datos Aseguramiento -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-shield-alt me-2"></i> Datos Aseguramiento
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Institución Principal -->
+            <h6 class="mb-3">Institución Principal</h6>
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <label for="instituto_id" class="form-label">
+                        Institución <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('instituto_id') is-invalid @enderror" 
+                            id="instituto_id" 
+                            name="instituto_id" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        @foreach($institutos ?? [] as $instituto)
+                            <option value="{{ $instituto->id }}" {{ old('instituto_id', $cliente->instituto_id) == $instituto->id ? 'selected' : '' }}>
+                                {{ $instituto->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('instituto_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="regimen_id" class="form-label">
+                        Régimen <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('regimen_id') is-invalid @enderror" 
+                            id="regimen_id" 
+                            name="regimen_id" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        @foreach($regimenes ?? [] as $regimen)
+                            <option value="{{ $regimen->id }}" {{ old('regimen_id', $cliente->regimen_id) == $regimen->id ? 'selected' : '' }}>
+                                {{ $regimen->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('regimen_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="semanas_imss" class="form-label">
+                        Semanas IMSS
+                    </label>
+                    <input type="number" 
+                           class="form-control @error('semanas_imss') is-invalid @enderror" 
+                           id="semanas_imss" 
+                           name="semanas_imss" 
+                           value="{{ old('semanas_imss', $cliente->semanas_imss) }}"
+                           min="0">
+                    @error('semanas_imss')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="tramite_id" class="form-label">
+                        Trámite <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('tramite_id') is-invalid @enderror" 
+                            id="tramite_id" 
+                            name="tramite_id" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        @foreach($tramites ?? [] as $tramite)
+                            <option value="{{ $tramite->id }}" {{ old('tramite_id', $cliente->tramite_id) == $tramite->id ? 'selected' : '' }}>
+                                {{ $tramite->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('tramite_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <label for="modalidad_id" class="form-label">
+                        Modalidad <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select @error('modalidad_id') is-invalid @enderror" 
+                            id="modalidad_id" 
+                            name="modalidad_id" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        @foreach($modalidadesImss ?? [] as $modalidad)
+                            <option value="{{ $modalidad->id }}" {{ old('modalidad_id', $cliente->modalidad_id) == $modalidad->id ? 'selected' : '' }}>
+                                {{ $modalidad->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('modalidad_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="fecha_alta" class="form-label">
+                        FechaAlta
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_alta') is-invalid @enderror" 
+                           id="fecha_alta" 
+                           name="fecha_alta" 
+                           value="{{ old('fecha_alta', $cliente->fecha_alta ? $cliente->fecha_alta->format('Y-m-d') : '') }}">
+                    @error('fecha_alta')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="fecha_baja" class="form-label">
+                        FechaBaja
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_baja') is-invalid @enderror" 
+                           id="fecha_baja" 
+                           name="fecha_baja" 
+                           value="{{ old('fecha_baja', $cliente->fecha_baja ? $cliente->fecha_baja->format('Y-m-d') : '') }}">
+                    @error('fecha_baja')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <!-- NSS Múltiples -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <label for="nss" class="form-label">
+                        NSS <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nss') is-invalid @enderror" 
+                           id="nss" 
+                           name="nss" 
+                           value="{{ old('nss', $nss[0] ?? '') }}" 
+                           maxlength="11"
+                           required>
+                    @error('nss')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="nss2" class="form-label">
+                        NSS2 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nss2') is-invalid @enderror" 
+                           id="nss2" 
+                           name="nss2" 
+                           value="{{ old('nss2', $nss[1] ?? '') }}" 
+                           maxlength="11">
+                    @error('nss2')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="nss3" class="form-label">
+                        NSS3 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nss3') is-invalid @enderror" 
+                           id="nss3" 
+                           name="nss3" 
+                           value="{{ old('nss3', $nss[2] ?? '') }}" 
+                           maxlength="11">
+                    @error('nss3')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="nss4" class="form-label">
+                        NSS4 (opcional)
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nss4') is-invalid @enderror" 
+                           id="nss4" 
+                           name="nss4" 
+                           value="{{ old('nss4', $nss[3] ?? '') }}" 
+                           maxlength="11">
+                    @error('nss4')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Historial de cambios (futuro) -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="fas fa-history me-2"></i> Datos económicos (opcional)
+    <!-- Sección 5: Institución 2 (ISSSTE) -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-building me-2"></i> Institución 2 (ISSSTE) - Opcional
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4 mb-3">
+                    <label for="instituto2_id" class="form-label">
+                        Institución2 (opcional)
+                    </label>
+                    <select class="form-select @error('instituto2_id') is-invalid @enderror" 
+                            id="instituto2_id" 
+                            name="instituto2_id">
+                        <option value="">Seleccionar...</option>
+                        <option value="">N/A</option>
+                        @foreach($institutos ?? [] as $instituto)
+                            @if($instituto->codigo == 'ISSSTE')
+                                <option value="{{ $instituto->id }}" 
+                                        {{ old('instituto2_id', $cliente->instituto2_id) == $instituto->id ? 'selected' : '' }}>
+                                    {{ $instituto->nombre }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
+                    @error('instituto2_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="regimen2_id" class="form-label">
+                        Régimen2 <span class="text-danger issste-required" style="display: none;">*</span>
+                    </label>
+                    <select class="form-select @error('regimen2_id') is-invalid @enderror" 
+                            id="regimen2_id" 
+                            name="regimen2_id"
+                            disabled>
+                        <option value="">Seleccionar...</option>
+                        @foreach($regimenes ?? [] as $regimen)
+                            @if($regimen->instituto_id == 2)
+                                <option value="{{ $regimen->id }}" {{ old('regimen2_id', $cliente->regimen2_id) == $regimen->id ? 'selected' : '' }}>
+                                    {{ $regimen->nombre }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
+                    @error('regimen2_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="anios_servicio_issste" class="form-label">
+                        Años de Servicio
+                    </label>
+                    <input type="number" 
+                           class="form-control @error('anios_servicio_issste') is-invalid @enderror" 
+                           id="anios_servicio_issste" 
+                           name="anios_servicio_issste" 
+                           value="{{ old('anios_servicio_issste', $cliente->anios_servicio_issste ?? $cliente->semanas_issste ?? '') }}"
+                           min="0"
+                           disabled>
+                    @error('anios_servicio_issste')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-4 mb-3">
+                    <label for="tramite2_id" class="form-label">
+                        Trámite2 <span class="text-danger issste-required" style="display: none;">*</span>
+                    </label>
+                    <select class="form-select @error('tramite2_id') is-invalid @enderror" 
+                            id="tramite2_id" 
+                            name="tramite2_id"
+                            disabled>
+                        <option value="">Seleccionar...</option>
+                        @foreach($tramites ?? [] as $tramite)
+                            <option value="{{ $tramite->id }}" {{ old('tramite2_id', $cliente->tramite2_id) == $tramite->id ? 'selected' : '' }}>
+                                {{ $tramite->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('tramite2_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="modalidad_issste" class="form-label">
+                        Modalidad2 <span class="text-danger issste-required" style="display: none;">*</span>
+                    </label>
+                    <select class="form-select @error('modalidad_issste') is-invalid @enderror" 
+                            id="modalidad_issste" 
+                            name="modalidad_issste"
+                            disabled>
+                        <option value="">Seleccionar...</option>
+                        @foreach($modalidadesIssste ?? [] as $modalidad)
+                            <option value="{{ $modalidad->codigo }}" {{ old('modalidad_issste', $cliente->modalidad_issste) == $modalidad->codigo ? 'selected' : '' }}>
+                                {{ $modalidad->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('modalidad_issste')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="nss_issste" class="form-label">
+                        NSSIssste
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('nss_issste') is-invalid @enderror" 
+                           id="nss_issste" 
+                           name="nss_issste" 
+                           value="{{ old('nss_issste', $cliente->nss_issste) }}"
+                           maxlength="11"
+                           disabled>
+                    @error('nss_issste')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="fecha_alta_issste" class="form-label">
+                        FechaAlta_ModIssste
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_alta_issste') is-invalid @enderror" 
+                           id="fecha_alta_issste" 
+                           name="fecha_alta_issste" 
+                           value="{{ old('fecha_alta_issste', $cliente->fecha_alta_issste ? $cliente->fecha_alta_issste->format('Y-m-d') : '') }}"
+                           disabled>
+                    @error('fecha_alta_issste')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="fecha_baja_issste" class="form-label">
+                        FechaBaja_ModIssste
+                    </label>
+                    <input type="date" 
+                           class="form-control @error('fecha_baja_issste') is-invalid @enderror" 
+                           id="fecha_baja_issste" 
+                           name="fecha_baja_issste" 
+                           value="{{ old('fecha_baja_issste', $cliente->fecha_baja_issste ? $cliente->fecha_baja_issste->format('Y-m-d') : '') }}"
+                           disabled>
+                    @error('fecha_baja_issste')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Instrucciones:</strong> 
+                <ul class="mb-0 mt-2">
+                    <li>Seleccione <strong>"ISSSTE"</strong> para habilitar los campos de Institución 2</li>
+                    <li>Seleccione <strong>"N/A"</strong> si no tiene segunda institución</li>
+                    <li>Si selecciona ISSSTE, los campos <strong>Régimen2, Trámite2 y Modalidad2</strong> son obligatorios</li>
+                </ul>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3 mb-3">
-                <label for="pension_default" class="form-label">Pensión Default</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" 
-                           step="0.01" 
-                           class="form-control" 
-                           id="pension_default" 
-                           name="pension_default"
-                           value="{{ old('pension_default', $cliente->pension_default ?? '') }}">
+    
+    <!-- Sección 6: Datos Económicos -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-money-bill-wave me-2"></i> Datos Económicos
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="pension_default" class="form-label">
+                        PensionDefault <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" 
+                               step="0.01" 
+                               class="form-control @error('pension_default') is-invalid @enderror" 
+                               id="pension_default" 
+                               name="pension_default"
+                               value="{{ old('pension_default', $cliente->pension_default) }}"
+                               required>
+                    </div>
+                    @error('pension_default')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <label for="pension_normal" class="form-label">Pensión Normal</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" 
-                           step="0.01" 
-                           class="form-control" 
-                           id="pension_normal" 
-                           name="pension_normal"
-                           value="{{ old('pension_normal', $cliente->pension_normal ?? '') }}">
+                
+                <div class="col-md-3 mb-3">
+                    <label for="pension_normal" class="form-label">
+                        PensionNormal <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" 
+                               step="0.01" 
+                               class="form-control @error('pension_normal') is-invalid @enderror" 
+                               id="pension_normal" 
+                               name="pension_normal"
+                               value="{{ old('pension_normal', $cliente->pension_normal) }}"
+                               required>
+                    </div>
+                    @error('pension_normal')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <label for="comision" class="form-label">Comisión</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" 
-                           step="0.01" 
-                           class="form-control" 
-                           id="comision" 
-                           name="comision"
-                           value="{{ old('comision', $cliente->comision ?? '') }}">
+                
+                <div class="col-md-3 mb-3">
+                    <label for="comision" class="form-label">
+                        Comisión <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" 
+                               step="0.01" 
+                               class="form-control @error('comision') is-invalid @enderror" 
+                               id="comision" 
+                               name="comision"
+                               value="{{ old('comision', $cliente->comision) }}"
+                               required>
+                    </div>
+                    @error('comision')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <label for="honorarios" class="form-label">Honorarios</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" 
-                           step="0.01" 
-                           class="form-control" 
-                           id="honorarios" 
-                           name="honorarios"
-                           value="{{ old('honorarios', $cliente->honorarios ?? '') }}">
+                
+                <div class="col-md-3 mb-3">
+                    <label for="honorarios" class="form-label">
+                        Honorarios <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" 
+                               step="0.01" 
+                               class="form-control @error('honorarios') is-invalid @enderror" 
+                               id="honorarios" 
+                               name="honorarios"
+                               value="{{ old('honorarios', $cliente->honorarios) }}"
+                               required>
+                    </div>
+                    @error('honorarios')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
         </div>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="fecha_alta" class="form-label">Fecha Alta</label>
-                <input type="date" 
-                       class="form-control" 
-                       id="fecha_alta" 
-                       name="fecha_alta"
-                       value="{{ old('fecha_alta', isset($cliente->fecha_alta) ? $cliente->fecha_alta->format('Y-m-d') : '') }}">
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="fecha_baja" class="form-label">Fecha Baja</label>
-                <input type="date" 
-                       class="form-control" 
-                       id="fecha_baja" 
-                       name="fecha_baja"
-                       value="{{ old('fecha_baja', isset($cliente->fecha_baja) ? $cliente->fecha_baja->format('Y-m-d') : '') }}">
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{{ route('clientes.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" {{ $cliente->tipo_cliente !== 'C' ? 'disabled' : '' }}>
+                    <i class="fas fa-save me-1"></i> Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
-</div>
+</form>
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar régimenes correspondientes al instituto actual
+    // Cargar régimenes según institución seleccionada
     const institutoSelect = document.getElementById('instituto_id');
     const regimenSelect = document.getElementById('regimen_id');
-    const regimenesOriginales = @json($regimenes);
+    const modalidadSelect = document.getElementById('modalidad_id');
     
+    const regimenesData = @json($regimenes ?? []);
+    const modalidadesImssData = @json($modalidadesImss ?? []);
+    const modalidadesIsssteData = @json($modalidadesIssste ?? []);
+    
+    // Función para cargar regímenes - CORREGIDA
     function cargarRegimenes(institutoId) {
+        // Guardar el valor actualmente seleccionado
+        const valorActual = regimenSelect.value;
+        
         // Limpiar opciones excepto la primera
         while (regimenSelect.options.length > 1) {
             regimenSelect.remove(1);
         }
         
         if (institutoId) {
-            const regimenesFiltrados = regimenesOriginales.filter(r => r.instituto_id == institutoId);
+            const regimenesFiltrados = regimenesData.filter(r => r.instituto_id == institutoId);
             
             regimenesFiltrados.forEach(regimen => {
                 const option = document.createElement('option');
                 option.value = regimen.id;
-                option.textContent = `${regimen.nombre}`;
-                // Seleccionar si es el régimen actual del cliente
-                if (regimen.id == @json($cliente->regimen_id)) {
+                option.textContent = regimen.nombre;
+                
+                // Seleccionar si coincide con el valor actual
+                if (regimen.id == valorActual) {
                     option.selected = true;
                 }
+                
                 regimenSelect.appendChild(option);
             });
             
             regimenSelect.disabled = false;
+            
+            // Si el valor actual no está en las opciones filtradas y hay un valor en el modelo, seleccionarlo
+            if (!valorActual && {{ $cliente->regimen_id ?? 'null' }}) {
+                const regimenIdCliente = {{ $cliente->regimen_id ?? 'null' }};
+                const regimenEncontrado = regimenesFiltrados.find(r => r.id == regimenIdCliente);
+                if (regimenEncontrado) {
+                    regimenSelect.value = regimenIdCliente;
+                }
+            }
         } else {
             regimenSelect.disabled = true;
         }
     }
     
+    // Función para cargar modalidades según institución - CORREGIDA
+    function cargarModalidades(institutoId) {
+        // Guardar el valor actualmente seleccionado
+        const valorActual = modalidadSelect.value;
+        
+        // Limpiar opciones excepto la primera
+        while (modalidadSelect.options.length > 1) {
+            modalidadSelect.remove(1);
+        }
+        
+        let modalidadesData;
+        
+        if (institutoId == 1) { // IMSS
+            modalidadesData = modalidadesImssData;
+        } else if (institutoId == 2) { // ISSSTE
+            modalidadesData = modalidadesIsssteData;
+        } else {
+            modalidadesData = [...modalidadesImssData, ...modalidadesIsssteData];
+        }
+        
+        modalidadesData.forEach(modalidad => {
+            const option = document.createElement('option');
+            option.value = modalidad.id;
+            option.textContent = modalidad.nombre;
+            
+            // Seleccionar si coincide con el valor actual
+            if (modalidad.id == valorActual) {
+                option.selected = true;
+            }
+            
+            modalidadSelect.appendChild(option);
+        });
+        
+        modalidadSelect.disabled = false;
+        
+        // Si el valor actual no está en las opciones filtradas y hay un valor en el modelo, seleccionarlo
+        if (!valorActual && {{ $cliente->modalidad_id ?? 'null' }}) {
+            const modalidadIdCliente = {{ $cliente->modalidad_id ?? 'null' }};
+            const modalidadEncontrada = modalidadesData.find(m => m.id == modalidadIdCliente);
+            if (modalidadEncontrada) {
+                modalidadSelect.value = modalidadIdCliente;
+            }
+        }
+    }
+    
+    // Eventos
     if (institutoSelect && regimenSelect) {
-        // Cargar al inicio
+        // Cargar al inicio CON LOS VALORES DEL MODELO
         cargarRegimenes(institutoSelect.value);
+        cargarModalidades(institutoSelect.value);
+        
+        // Asegurarse de que los valores del modelo se mantengan después de cargar
+        setTimeout(() => {
+            // Régimen
+            const regimenIdCliente = {{ $cliente->regimen_id ?? 'null' }};
+            if (regimenIdCliente && regimenSelect.value !== regimenIdCliente) {
+                regimenSelect.value = regimenIdCliente;
+            }
+            
+            // Modalidad
+            const modalidadIdCliente = {{ $cliente->modalidad_id ?? 'null' }};
+            if (modalidadIdCliente && modalidadSelect.value !== modalidadIdCliente) {
+                modalidadSelect.value = modalidadIdCliente;
+            }
+        }, 100);
         
         // Actualizar al cambiar institución
         institutoSelect.addEventListener('change', function() {
             cargarRegimenes(this.value);
+            cargarModalidades(this.value);
         });
+    }
+    
+    // Validación de CURP
+    const curpInput = document.getElementById('curp');
+    if (curpInput) {
+        curpInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Validación de RFC
+    const rfcInput = document.getElementById('rfc');
+    if (rfcInput) {
+        rfcInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // ==================== CONTROL ISSSTE ====================
+    const instituto2Select = document.getElementById('instituto2_id');
+    
+    // Campos ISSSTE que se deben habilitar/deshabilitar
+    const camposIssste = [
+        'regimen2_id',
+        'anios_servicio_issste', 
+        'tramite2_id',
+        'modalidad_issste',
+        'nss_issste',
+        'fecha_alta_issste',
+        'fecha_baja_issste'
+    ];
+    
+    // Campos obligatorios cuando ISSSTE está seleccionado
+    const camposObligatorios = ['regimen2_id', 'tramite2_id', 'modalidad_issste'];
+    
+    // Función para habilitar/deshabilitar campos ISSSTE
+    function toggleCamposIssste(habilitar) {
+        const esIsssteSeleccionado = habilitar;
+        
+        camposIssste.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) {
+                // Habilitar/deshabilitar campo
+                campo.disabled = !habilitar;
+                
+                // Marcar como requerido solo si es ISSSTE y está en la lista de obligatorios
+                if (camposObligatorios.includes(id)) {
+                    campo.required = habilitar;
+                }
+                
+                // Mostrar/ocultar asterisco rojo
+                const label = document.querySelector(`label[for="${id}"]`);
+                if (label) {
+                    const asterisco = label.querySelector('.issste-required');
+                    if (asterisco) {
+                        asterisco.style.display = habilitar ? 'inline' : 'none';
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función para verificar si ISSSTE está seleccionado
+    function esIsssteSeleccionado() {
+        if (!instituto2Select) return false;
+        
+        const valorSeleccionado = instituto2Select.value;
+        const textoSeleccionado = instituto2Select.options[instituto2Select.selectedIndex].text;
+        
+        // Verificar si el valor es 2 (ID de ISSSTE) o el texto es "ISSSTE"
+        return valorSeleccionado == 2 || textoSeleccionado === 'ISSSTE';
+    }
+    
+    // Configurar estado inicial
+    if (instituto2Select) {
+        // Estado inicial basado en valor actual
+        toggleCamposIssste(esIsssteSeleccionado());
+        
+        // Agregar evento change
+        instituto2Select.addEventListener('change', function() {
+            toggleCamposIssste(esIsssteSeleccionado());
+        });
+        
+        // También agregar evento para cuando se carga la página y hay un valor
+        window.addEventListener('load', function() {
+            toggleCamposIssste(esIsssteSeleccionado());
+        });
+    }
+    
+    // ==================== CONTROL MODALIDADES SEGÚN INSTITUCIÓN ====================
+    if (institutoSelect && modalidadSelect) {
+        // Función para actualizar modalidades según institución - CORREGIDA
+        function actualizarModalidades() {
+            const institutoId = institutoSelect.value;
+            const todasModalidades = @json($modalidadesImss ?? []);
+            const modalidadesIssste = @json($modalidadesIssste ?? []);
+            
+            // Guardar valor actual
+            const valorActual = modalidadSelect.value;
+            
+            // Limpiar opciones excepto la primera
+            while (modalidadSelect.options.length > 1) {
+                modalidadSelect.remove(1);
+            }
+            
+            let modalidadesFiltradas = [];
+            
+            if (institutoId == 1) { // IMSS
+                modalidadesFiltradas = todasModalidades.filter(m => 
+                    ['NA', 'M10', 'M40'].includes(m.codigo)
+                );
+            } else if (institutoId == 2) { // ISSSTE
+                modalidadesFiltradas = modalidadesIssste.filter(m => 
+                    ['NA', 'CV'].includes(m.codigo)
+                );
+            } else {
+                // Si no hay institución, mostrar todas
+                modalidadesFiltradas = [...todasModalidades, ...modalidadesIssste];
+            }
+            
+            // Agregar opciones filtradas
+            modalidadesFiltradas.forEach(modalidad => {
+                const option = document.createElement('option');
+                option.value = modalidad.id;
+                option.textContent = modalidad.nombre;
+                
+                // Seleccionar si es el valor actual
+                if (modalidad.id == valorActual) {
+                    option.selected = true;
+                }
+                
+                modalidadSelect.appendChild(option);
+            });
+            
+            // Si el valor actual no está en las opciones filtradas, verificar si hay valor del modelo
+            if (valorActual && !modalidadesFiltradas.some(m => m.id == valorActual)) {
+                const modalidadIdCliente = {{ $cliente->modalidad_id ?? 'null' }};
+                const modalidadEncontrada = modalidadesFiltradas.find(m => m.id == modalidadIdCliente);
+                if (modalidadEncontrada) {
+                    modalidadSelect.value = modalidadIdCliente;
+                } else {
+                    modalidadSelect.value = '';
+                }
+            }
+        }
+        
+        // Configurar estado inicial
+        actualizarModalidades();
+        
+        // Asegurarse de mantener el valor del modelo
+        setTimeout(() => {
+            const modalidadIdCliente = {{ $cliente->modalidad_id ?? 'null' }};
+            if (modalidadIdCliente && modalidadSelect.value !== modalidadIdCliente) {
+                modalidadSelect.value = modalidadIdCliente;
+            }
+        }, 100);
+        
+        // Agregar evento change
+        institutoSelect.addEventListener('change', actualizarModalidades);
+    }
+    
+    // ==================== CONTROL RÉGIMENES SEGÚN INSTITUCIÓN ====================
+    if (institutoSelect && regimenSelect) {
+        function actualizarRegimenes() {
+            const institutoId = institutoSelect.value;
+            const valorActual = regimenSelect.value;
+            
+            // Limpiar opciones excepto la primera
+            while (regimenSelect.options.length > 1) {
+                regimenSelect.remove(1);
+            }
+            
+            if (institutoId) {
+                const regimenesFiltrados = regimenesData.filter(r => r.instituto_id == institutoId);
+                
+                regimenesFiltrados.forEach(regimen => {
+                    const option = document.createElement('option');
+                    option.value = regimen.id;
+                    option.textContent = regimen.nombre;
+                    
+                    if (regimen.id == valorActual) {
+                        option.selected = true;
+                    }
+                    
+                    regimenSelect.appendChild(option);
+                });
+                
+                regimenSelect.disabled = false;
+            } else {
+                regimenSelect.disabled = true;
+            }
+        }
+        
+        actualizarRegimenes();
+        
+        // Asegurarse de mantener el valor del modelo
+        setTimeout(() => {
+            const regimenIdCliente = {{ $cliente->regimen_id ?? 'null' }};
+            if (regimenIdCliente && regimenSelect.value !== regimenIdCliente) {
+                regimenSelect.value = regimenIdCliente;
+            }
+        }, 100);
+        
+        institutoSelect.addEventListener('change', actualizarRegimenes);
     }
 });
 </script>
+
+<style>
+    .issste-required {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .campos-issste-disabled {
+        background-color: #f8f9fa;
+        opacity: 0.7;
+    }
+    
+    .campos-issste-enabled {
+        background-color: #fff;
+        opacity: 1;
+    }
+</style>
 @endpush
 @endsection
