@@ -4,27 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClienteContacto extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'clientes_contacto';
     
-    protected $primaryKey = 'id';
-    
-    public $incrementing = true;
-    
-    protected $keyType = 'int';
-    
-    public $timestamps = false;
+    const CREATED_AT = 'creado_en';
+    const UPDATED_AT = null;
     
     protected $fillable = [
         'cliente_id',
         'tipo',
         'valor',
-        'es_principal',
-        'creado_en'
+        'es_principal'
     ];
 
     protected $casts = [
@@ -34,7 +29,7 @@ class ClienteContacto extends Model
 
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class, 'cliente_id', 'cliente_id');
+        return $this->belongsTo(Cliente::class);
     }
 
     public function scopePrincipales($query)
@@ -49,12 +44,10 @@ class ClienteContacto extends Model
 
     public function marcarComoPrincipal()
     {
-        // Desmarcar todos los del mismo tipo para este cliente
         self::where('cliente_id', $this->cliente_id)
             ->where('tipo', $this->tipo)
             ->update(['es_principal' => 0]);
         
-        // Marcar este como principal
         $this->es_principal = 1;
         return $this->save();
     }
