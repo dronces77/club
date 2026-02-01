@@ -1,0 +1,936 @@
+CREATE DATABASE  IF NOT EXISTS `clubpension` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `clubpension`;
+-- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
+--
+-- Host: localhost    Database: clubpension
+-- ------------------------------------------------------
+-- Server version	8.0.44
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `archivos`
+--
+
+DROP TABLE IF EXISTS `archivos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `archivos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ruta` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `archivos_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `archivos_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `archivos`
+--
+
+LOCK TABLES `archivos` WRITE;
+/*!40000 ALTER TABLE `archivos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `archivos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `catalogo_institutos`
+--
+
+DROP TABLE IF EXISTS `catalogo_institutos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catalogo_institutos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `catalogo_institutos_codigo_unique` (`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `catalogo_institutos`
+--
+
+LOCK TABLES `catalogo_institutos` WRITE;
+/*!40000 ALTER TABLE `catalogo_institutos` DISABLE KEYS */;
+INSERT INTO `catalogo_institutos` VALUES (13,'IMSS','Instituto Mexicano del Seguro Social','Seguro social para trabajadores',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(14,'ISSSTE','Instituto de Seguridad y Servicios Sociales de los Trabajadores del Estado','Seguro social para trabajadores del Estado',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `catalogo_institutos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `catalogo_modalidades`
+--
+
+DROP TABLE IF EXISTS `catalogo_modalidades`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catalogo_modalidades` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `catalogo_modalidades_codigo_unique` (`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `catalogo_modalidades`
+--
+
+LOCK TABLES `catalogo_modalidades` WRITE;
+/*!40000 ALTER TABLE `catalogo_modalidades` DISABLE KEYS */;
+INSERT INTO `catalogo_modalidades` VALUES (17,'NA','No Aplica','Modalidad no aplica',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(18,'CV','Continuación Voluntaria','Continuación Voluntaria ISSSTE',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(19,'M10','Modalidad 10','Modalidad 10 IMSS',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(20,'M40','Modalidad 40','Modalidad 40 IMSS',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `catalogo_modalidades` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `catalogo_regimenes`
+--
+
+DROP TABLE IF EXISTS `catalogo_regimenes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catalogo_regimenes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `instituto_id` bigint unsigned NOT NULL,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `catalogo_regimenes_codigo_unique` (`codigo`),
+  KEY `catalogo_regimenes_instituto_id_foreign` (`instituto_id`),
+  CONSTRAINT `catalogo_regimenes_instituto_id_foreign` FOREIGN KEY (`instituto_id`) REFERENCES `catalogo_institutos` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `catalogo_regimenes`
+--
+
+LOCK TABLES `catalogo_regimenes` WRITE;
+/*!40000 ALTER TABLE `catalogo_regimenes` DISABLE KEYS */;
+INSERT INTO `catalogo_regimenes` VALUES (13,13,'OBL','Obligatorio','Régimen obligatorio',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(14,14,'VOL','Voluntario','Régimen voluntario',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `catalogo_regimenes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `catalogo_tramites`
+--
+
+DROP TABLE IF EXISTS `catalogo_tramites`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catalogo_tramites` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `catalogo_tramites_codigo_unique` (`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `catalogo_tramites`
+--
+
+LOCK TABLES `catalogo_tramites` WRITE;
+/*!40000 ALTER TABLE `catalogo_tramites` DISABLE KEYS */;
+INSERT INTO `catalogo_tramites` VALUES (15,'PEN','Pensión','Trámite de pensión',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL),(16,'JUB','Jubilación','Trámite de jubilación',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `catalogo_tramites` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_beneficiarios`
+--
+
+DROP TABLE IF EXISTS `cliente_beneficiarios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_beneficiarios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `parentesco` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `porcentaje` decimal(5,2) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_beneficiarios_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_beneficiarios_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_beneficiarios`
+--
+
+LOCK TABLES `cliente_beneficiarios` WRITE;
+/*!40000 ALTER TABLE `cliente_beneficiarios` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_beneficiarios` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_contactos`
+--
+
+DROP TABLE IF EXISTS `cliente_contactos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_contactos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `tipo` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `valor` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `es_principal` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_contactos_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_contactos_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_contactos`
+--
+
+LOCK TABLES `cliente_contactos` WRITE;
+/*!40000 ALTER TABLE `cliente_contactos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_contactos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_curps`
+--
+
+DROP TABLE IF EXISTS `cliente_curps`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_curps` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `curp` varchar(18) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `es_principal` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_curps_curp_unique` (`curp`),
+  KEY `cliente_curps_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_curps_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_curps`
+--
+
+LOCK TABLES `cliente_curps` WRITE;
+/*!40000 ALTER TABLE `cliente_curps` DISABLE KEYS */;
+INSERT INTO `cliente_curps` VALUES (2,2,'PEPJ800101HDFRRN09',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `cliente_curps` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_dependientes`
+--
+
+DROP TABLE IF EXISTS `cliente_dependientes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_dependientes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `edad` int DEFAULT NULL,
+  `parentesco` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_dependientes_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_dependientes_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_dependientes`
+--
+
+LOCK TABLES `cliente_dependientes` WRITE;
+/*!40000 ALTER TABLE `cliente_dependientes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_dependientes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_domicilios`
+--
+
+DROP TABLE IF EXISTS `cliente_domicilios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_domicilios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `calle` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `numero` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `colonia` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `municipio_id` bigint unsigned DEFAULT NULL,
+  `estado_id` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_domicilios_cliente_id_foreign` (`cliente_id`),
+  KEY `cliente_domicilios_municipio_id_foreign` (`municipio_id`),
+  KEY `cliente_domicilios_estado_id_foreign` (`estado_id`),
+  CONSTRAINT `cliente_domicilios_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
+  CONSTRAINT `cliente_domicilios_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `cliente_estados` (`id`),
+  CONSTRAINT `cliente_domicilios_municipio_id_foreign` FOREIGN KEY (`municipio_id`) REFERENCES `cliente_municipios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_domicilios`
+--
+
+LOCK TABLES `cliente_domicilios` WRITE;
+/*!40000 ALTER TABLE `cliente_domicilios` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_domicilios` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_estados`
+--
+
+DROP TABLE IF EXISTS `cliente_estados`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_estados` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_estados_codigo_unique` (`codigo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_estados`
+--
+
+LOCK TABLES `cliente_estados` WRITE;
+/*!40000 ALTER TABLE `cliente_estados` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_estados` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_estudios`
+--
+
+DROP TABLE IF EXISTS `cliente_estudios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_estudios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `nivel` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `institucion` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fecha` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_estudios_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_estudios_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_estudios`
+--
+
+LOCK TABLES `cliente_estudios` WRITE;
+/*!40000 ALTER TABLE `cliente_estudios` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_estudios` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_localidades`
+--
+
+DROP TABLE IF EXISTS `cliente_localidades`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_localidades` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `municipio_id` bigint unsigned NOT NULL,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_localidades_codigo_unique` (`codigo`),
+  KEY `cliente_localidades_municipio_id_foreign` (`municipio_id`),
+  CONSTRAINT `cliente_localidades_municipio_id_foreign` FOREIGN KEY (`municipio_id`) REFERENCES `cliente_municipios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_localidades`
+--
+
+LOCK TABLES `cliente_localidades` WRITE;
+/*!40000 ALTER TABLE `cliente_localidades` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_localidades` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_municipios`
+--
+
+DROP TABLE IF EXISTS `cliente_municipios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_municipios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `estado_id` bigint unsigned NOT NULL,
+  `codigo` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_municipios_codigo_unique` (`codigo`),
+  KEY `cliente_municipios_estado_id_foreign` (`estado_id`),
+  CONSTRAINT `cliente_municipios_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `cliente_estados` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_municipios`
+--
+
+LOCK TABLES `cliente_municipios` WRITE;
+/*!40000 ALTER TABLE `cliente_municipios` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_municipios` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_nsss`
+--
+
+DROP TABLE IF EXISTS `cliente_nsss`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_nsss` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `nss` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `es_principal` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_nsss_nss_unique` (`nss`),
+  KEY `cliente_nsss_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_nsss_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_nsss`
+--
+
+LOCK TABLES `cliente_nsss` WRITE;
+/*!40000 ALTER TABLE `cliente_nsss` DISABLE KEYS */;
+INSERT INTO `cliente_nsss` VALUES (1,2,'12345678901',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `cliente_nsss` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_ocupaciones`
+--
+
+DROP TABLE IF EXISTS `cliente_ocupaciones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_ocupaciones` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `puesto` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `empresa` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cliente_ocupaciones_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_ocupaciones_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_ocupaciones`
+--
+
+LOCK TABLES `cliente_ocupaciones` WRITE;
+/*!40000 ALTER TABLE `cliente_ocupaciones` DISABLE KEYS */;
+/*!40000 ALTER TABLE `cliente_ocupaciones` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `cliente_rfcs`
+--
+
+DROP TABLE IF EXISTS `cliente_rfcs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cliente_rfcs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `rfc` varchar(13) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `es_principal` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cliente_rfcs_rfc_unique` (`rfc`),
+  KEY `cliente_rfcs_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `cliente_rfcs_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `cliente_rfcs`
+--
+
+LOCK TABLES `cliente_rfcs` WRITE;
+/*!40000 ALTER TABLE `cliente_rfcs` DISABLE KEYS */;
+INSERT INTO `cliente_rfcs` VALUES (1,2,'PEPJ800101XXX',1,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `cliente_rfcs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `clientes`
+--
+
+DROP TABLE IF EXISTS `clientes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `clientes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `no_cliente` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo_cliente` enum('C','E','O') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `apellido_paterno` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `apellido_materno` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fecha_nacimiento` date DEFAULT NULL,
+  `edad` int DEFAULT NULL,
+  `instituto_id` bigint unsigned DEFAULT NULL,
+  `instituto2_id` bigint unsigned DEFAULT NULL,
+  `regimen_id` bigint unsigned DEFAULT NULL,
+  `regimen2_id` bigint unsigned DEFAULT NULL,
+  `semanas_imss` int DEFAULT NULL,
+  `anios_servicio_issste` int DEFAULT NULL,
+  `nss_issste` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tramite_id` bigint unsigned DEFAULT NULL,
+  `tramite2_id` bigint unsigned DEFAULT NULL,
+  `modalidad_id` bigint unsigned DEFAULT NULL,
+  `modalidad_issste` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pension_default` decimal(12,2) DEFAULT NULL,
+  `pension_normal` decimal(12,2) DEFAULT NULL,
+  `comision` decimal(12,2) DEFAULT NULL,
+  `honorarios` decimal(12,2) DEFAULT NULL,
+  `fecha_alta` date DEFAULT NULL,
+  `fecha_baja` date DEFAULT NULL,
+  `fecha_alta_issste` date DEFAULT NULL,
+  `fecha_baja_issste` date DEFAULT NULL,
+  `fecha_contrato` date DEFAULT NULL,
+  `estatus` enum('Activo','pendiente','Suspendido','Terminado','Baja') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cliente_referidor_id` bigint unsigned DEFAULT NULL,
+  `creado_por` bigint unsigned DEFAULT NULL,
+  `actualizado_por` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `clientes_no_cliente_unique` (`no_cliente`),
+  KEY `clientes_instituto_id_foreign` (`instituto_id`),
+  KEY `clientes_instituto2_id_foreign` (`instituto2_id`),
+  KEY `clientes_regimen_id_foreign` (`regimen_id`),
+  KEY `clientes_regimen2_id_foreign` (`regimen2_id`),
+  KEY `clientes_tramite_id_foreign` (`tramite_id`),
+  KEY `clientes_tramite2_id_foreign` (`tramite2_id`),
+  KEY `clientes_modalidad_id_foreign` (`modalidad_id`),
+  KEY `clientes_cliente_referidor_id_foreign` (`cliente_referidor_id`),
+  KEY `clientes_creado_por_foreign` (`creado_por`),
+  KEY `clientes_actualizado_por_foreign` (`actualizado_por`),
+  CONSTRAINT `clientes_actualizado_por_foreign` FOREIGN KEY (`actualizado_por`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `clientes_cliente_referidor_id_foreign` FOREIGN KEY (`cliente_referidor_id`) REFERENCES `clientes` (`id`),
+  CONSTRAINT `clientes_creado_por_foreign` FOREIGN KEY (`creado_por`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `clientes_instituto2_id_foreign` FOREIGN KEY (`instituto2_id`) REFERENCES `catalogo_institutos` (`id`),
+  CONSTRAINT `clientes_instituto_id_foreign` FOREIGN KEY (`instituto_id`) REFERENCES `catalogo_institutos` (`id`),
+  CONSTRAINT `clientes_modalidad_id_foreign` FOREIGN KEY (`modalidad_id`) REFERENCES `catalogo_modalidades` (`id`),
+  CONSTRAINT `clientes_regimen2_id_foreign` FOREIGN KEY (`regimen2_id`) REFERENCES `catalogo_regimenes` (`id`),
+  CONSTRAINT `clientes_regimen_id_foreign` FOREIGN KEY (`regimen_id`) REFERENCES `catalogo_regimenes` (`id`),
+  CONSTRAINT `clientes_tramite2_id_foreign` FOREIGN KEY (`tramite2_id`) REFERENCES `catalogo_tramites` (`id`),
+  CONSTRAINT `clientes_tramite_id_foreign` FOREIGN KEY (`tramite_id`) REFERENCES `catalogo_tramites` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `clientes`
+--
+
+LOCK TABLES `clientes` WRITE;
+/*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
+INSERT INTO `clientes` VALUES (2,'001','C','Juan','Pérez','López',NULL,NULL,13,NULL,13,NULL,NULL,NULL,NULL,15,NULL,20,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'Activo',NULL,NULL,NULL,'2026-02-02 01:33:29','2026-02-02 01:33:29',NULL);
+/*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `contratos`
+--
+
+DROP TABLE IF EXISTS `contratos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contratos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `numero` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `monto` decimal(12,2) NOT NULL,
+  `estatus` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Activo',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `contratos_numero_unique` (`numero`),
+  KEY `contratos_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `contratos_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `contratos`
+--
+
+LOCK TABLES `contratos` WRITE;
+/*!40000 ALTER TABLE `contratos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `contratos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `documentos`
+--
+
+DROP TABLE IF EXISTS `documentos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `documentos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `tipo` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ruta` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `estatus` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Activo',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `documentos_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `documentos_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `documentos`
+--
+
+LOCK TABLES `documentos` WRITE;
+/*!40000 ALTER TABLE `documentos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `documentos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `historial_clientes`
+--
+
+DROP TABLE IF EXISTS `historial_clientes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `historial_clientes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `campo_modificado` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `valor_anterior` text COLLATE utf8mb4_unicode_ci,
+  `valor_nuevo` text COLLATE utf8mb4_unicode_ci,
+  `usuario_id` bigint unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `historial_clientes_cliente_id_foreign` (`cliente_id`),
+  KEY `historial_clientes_usuario_id_foreign` (`usuario_id`),
+  CONSTRAINT `historial_clientes_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
+  CONSTRAINT `historial_clientes_usuario_id_foreign` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `historial_clientes`
+--
+
+LOCK TABLES `historial_clientes` WRITE;
+/*!40000 ALTER TABLE `historial_clientes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `historial_clientes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `migrations`
+--
+
+DROP TABLE IF EXISTS `migrations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `migrations` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch` int NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `migrations`
+--
+
+LOCK TABLES `migrations` WRITE;
+/*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
+INSERT INTO `migrations` VALUES (1,'2019_12_14_000001_create_personal_access_tokens_table',1),(2,'2026_02_01_180409_create_usuarios_table',1),(3,'2026_02_01_180410_create_catalogo_institutos_table',1),(4,'2026_02_01_180411_create_catalogo_regimenes_table',1),(5,'2026_02_01_180412_create_catalogo_tramites_table',1),(6,'2026_02_01_180413_create_catalogo_modalidades_table',1),(7,'2026_02_01_180414_create_clientes_table',1),(8,'2026_02_01_180415_create_cliente_contactos_table',1),(9,'2026_02_01_180416_create_cliente_curps_table',1),(10,'2026_02_01_180417_create_cliente_rfcs_table',1),(11,'2026_02_01_180418_create_cliente_nsss_table',1),(12,'2026_02_01_180419_create_cliente_estados_table',1),(13,'2026_02_01_180420_create_cliente_municipios_table',1),(14,'2026_02_01_180421_create_cliente_localidades_table',1),(15,'2026_02_01_180422_create_cliente_domicilios_table',1),(16,'2026_02_01_180423_create_cliente_beneficiarios_table',1),(17,'2026_02_01_180424_create_cliente_estudios_table',1),(18,'2026_02_01_180425_create_cliente_ocupaciones_table',1),(19,'2026_02_01_180426_create_cliente_dependientes_table',1),(20,'2026_02_01_180427_create_contratos_table',1),(21,'2026_02_01_180428_create_pagos_table',1),(22,'2026_02_01_180429_create_documentos_table',1),(23,'2026_02_01_180430_create_seguimientos_table',1),(24,'2026_02_01_180431_create_notas_table',1),(25,'2026_02_01_180432_create_historial_clientes_table',1),(26,'2026_02_01_180433_create_archivos_table',1);
+/*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `notas`
+--
+
+DROP TABLE IF EXISTS `notas`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notas` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `titulo` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contenido` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `notas_cliente_id_foreign` (`cliente_id`),
+  CONSTRAINT `notas_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `notas`
+--
+
+LOCK TABLES `notas` WRITE;
+/*!40000 ALTER TABLE `notas` DISABLE KEYS */;
+/*!40000 ALTER TABLE `notas` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pagos`
+--
+
+DROP TABLE IF EXISTS `pagos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pagos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `contrato_id` bigint unsigned NOT NULL,
+  `fecha_pago` date NOT NULL,
+  `monto` decimal(12,2) NOT NULL,
+  `metodo` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `estatus` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Registrado',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pagos_contrato_id_foreign` (`contrato_id`),
+  CONSTRAINT `pagos_contrato_id_foreign` FOREIGN KEY (`contrato_id`) REFERENCES `contratos` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pagos`
+--
+
+LOCK TABLES `pagos` WRITE;
+/*!40000 ALTER TABLE `pagos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pagos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `personal_access_tokens`
+--
+
+DROP TABLE IF EXISTS `personal_access_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `personal_access_tokens` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tokenable_id` bigint unsigned NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `abilities` text COLLATE utf8mb4_unicode_ci,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
+  KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `personal_access_tokens`
+--
+
+LOCK TABLES `personal_access_tokens` WRITE;
+/*!40000 ALTER TABLE `personal_access_tokens` DISABLE KEYS */;
+/*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `seguimientos`
+--
+
+DROP TABLE IF EXISTS `seguimientos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `seguimientos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cliente_id` bigint unsigned NOT NULL,
+  `fecha` date NOT NULL,
+  `comentario` text COLLATE utf8mb4_unicode_ci,
+  `usuario_id` bigint unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `seguimientos_cliente_id_foreign` (`cliente_id`),
+  KEY `seguimientos_usuario_id_foreign` (`usuario_id`),
+  CONSTRAINT `seguimientos_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
+  CONSTRAINT `seguimientos_usuario_id_foreign` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `seguimientos`
+--
+
+LOCK TABLES `seguimientos` WRITE;
+/*!40000 ALTER TABLE `seguimientos` DISABLE KEYS */;
+/*!40000 ALTER TABLE `seguimientos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `usuarios`
+--
+
+DROP TABLE IF EXISTS `usuarios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `usuarios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rol` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'usuario',
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `usuarios_email_unique` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `usuarios`
+--
+
+LOCK TABLES `usuarios` WRITE;
+/*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
+INSERT INTO `usuarios` VALUES (1,'Administrador','dronces@hotmail.com','$2y$12$ajZyXNAHRBom8EhZXwau1eCcPaRXBj6A7wcCByLSvEd0UR5iVi4GC','admin',1,'2026-02-02 01:31:03','2026-02-02 01:31:03',NULL),(2,'Usuario Normal','usuario@example.com','$2y$12$bAUaXSBw0bEFHXk7iBTykOYWddTr0pU2I.LueYkSDDV7kkk0GT.uK','usuario',1,'2026-02-02 01:31:03','2026-02-02 01:31:03',NULL);
+/*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Dumping events for database 'clubpension'
+--
+
+--
+-- Dumping routines for database 'clubpension'
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-02-01 13:43:31
