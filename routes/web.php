@@ -36,8 +36,18 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Ruta para API de estadísticas del dashboard
+    Route::get('/dashboard/estadisticas', [DashboardController::class, 'estadisticas'])->name('dashboard.estadisticas');
+    
     // Clientes (CRUD completo)
     Route::resource('clientes', ClienteController::class);
+    
+    // Rutas adicionales para clientes
+    Route::get('/clientes/{cliente}/cambiar-estatus', [ClienteController::class, 'cambiarEstatus'])->name('clientes.cambiar-estatus');
+    Route::put('/clientes/{cliente}/cambiar-estatus', [ClienteController::class, 'cambiarEstatusUpdate'])->name('clientes.cambiar-estatus.update');
+    Route::get('/clientes/exportar', [ClienteController::class, 'exportar'])->name('clientes.exportar');
+    Route::get('/clientes/estadisticas', [ClienteController::class, 'estadisticas'])->name('clientes.estadisticas');
+    Route::get('/regimenes-por-instituto/{institutoId}', [ClienteController::class, 'getRegimenesPorInstituto'])->name('regimenes.por-instituto');
     
     // Perfil de usuario
     Route::get('/perfil', [DashboardController::class, 'perfil'])->name('perfil');
