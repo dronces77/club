@@ -3,114 +3,175 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
-use App\Models\CatalogoInstituto;
+use App\Models\Instituto;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    /**
+     * Display the dashboard.
+     */
     public function index()
     {
-        // Total de clientes
-        $totalClientes = Cliente::count();
+        // Total de clientes - EXCLUYE ELIMINADOS
+        $totalClientes = Cliente::whereNull('eliminado_en')->count();
         
-        // Clientes activos (tipo 'C' y estatus 'Activo')
-        $clientesActivos = Cliente::where('tipo_cliente', 'C')
+        // Clientes activos - EXCLUYE ELIMINADOS
+        $clientesActivos = Cliente::whereNull('eliminado_en')
             ->where('estatus', 'Activo')
             ->count();
         
-        // Clientes pendientes (tipo 'P' - Prospectos)
-        $clientesPendientes = Cliente::where('tipo_cliente', 'P')->count();
+        // Clientes pendientes - EXCLUYE ELIMINADOS
+        $clientesPendientes = Cliente::whereNull('eliminado_en')
+            ->where('estatus', 'pendiente')
+            ->count();
         
-        // Clientes con pensión (todos IMSS/ISSSTE)
-        $clientesConPension = Cliente::whereHas('instituto', function($query) {
-            $query->whereIn('codigo', ['IMSS', 'ISSSTE']);
-        })->count();
+        // Clientes con pensión - EXCLUYE ELIMINADOS
+        // Ajusta esta lógica según tu definición de "con pensión"
+        $clientesConPension = Cliente::whereNull('eliminado_en')
+            ->where(function($query) {
+                $query->whereNotNull('pension_default')
+                      ->orWhereNotNull('pension_normal')
+                      ->orWhere('pension_default', '>', 0)
+                      ->orWhere('pension_normal', '>', 0);
+            })
+            ->count();
         
-        // Clientes por institución (IMSS e ISSSTE)
-        $clientesIMSS = Cliente::whereHas('instituto', function($query) {
-            $query->where('codigo', 'IMSS');
-        })->count();
+        // Clientes por institución - EXCLUYE ELIMINADOS
+        $clientesIMSS = Cliente::whereNull('eliminado_en')
+            ->where(function($q) {
+                $q->where('instituto_id', 1) // IMSS
+                  ->orWhere('instituto2_id', 1);
+            })
+            ->count();
         
-        $clientesISSSTE = Cliente::whereHas('instituto', function($query) {
-            $query->where('codigo', 'ISSSTE');
-        })->count();
+        $clientesISSSTE = Cliente::whereNull('eliminado_en')
+            ->where(function($q) {
+                $q->where('instituto_id', 2) // ISSSTE
+                  ->orWhere('instituto2_id', 2);
+            })
+            ->count();
         
-        // Clientes agregados en el mes actual
-        $inicioMes = Carbon::now()->startOfMonth();
-        $finMes = Carbon::now()->endOfMonth();
-        $clientesMes = Cliente::whereBetween('creado_en', [$inicioMes, $finMes])->count();
+        // Clientes agregados este mes - EXCLUYE ELIMINADOS
+        $clientesMes = Cliente::whereNull('eliminado_en')
+            ->whereMonth('creado_en', Carbon::now()->month)
+            ->whereYear('creado_en', Carbon::now()->year)
+            ->count();
         
-        // Clientes recientes (últimos 10)
-        $clientesRecientes = Cliente::with('instituto')
+        // Clientes recientes (últimos 10) - EXCLUYE ELIMINADOS
+        $clientesRecientes = Cliente::with(['instituto', 'instituto2'])
+            ->whereNull('eliminado_en')
             ->orderBy('creado_en', 'desc')
-            ->take(10)
+            ->limit(10)
             ->get();
         
-        return view('dashboard.index', [
-            'totalClientes' => $totalClientes,
-            'clientesActivos' => $clientesActivos,
-            'clientesPendientes' => $clientesPendientes,
-            'clientesConPension' => $clientesConPension,
-            'clientesIMSS' => $clientesIMSS,
-            'clientesISSSTE' => $clientesISSSTE,
-            'clientesMes' => $clientesMes,
-            'clientesRecientes' => $clientesRecientes,
-        ]);
+        return view('dashboard.index', compact(
+            'totalClientes',
+            'clientesActivos',
+            'clientesPendientes',
+            'clientesConPension',
+            'clientesIMSS',
+            'clientesISSSTE',
+            'clientesMes',
+            'clientesRecientes'
+        ));
     }
-    
-    // Método para API/AJAX que actualiza estadísticas
+
+    /**
+     * API para actualizar estadísticas del dashboard (AJAX)
+     */
     public function estadisticas()
     {
-        // Total de clientes
-        $totalClientes = Cliente::count();
+        // Total de clientes - EXCLUYE ELIMINADOS
+        $totalClientes = Cliente::whereNull('eliminado_en')->count();
         
-        // Clientes activos (tipo 'C' y estatus 'Activo')
-        $clientesActivos = Cliente::where('tipo_cliente', 'C')
+        // Clientes activos - EXCLUYE ELIMINADOS
+        $clientesActivos = Cliente::whereNull('eliminado_en')
             ->where('estatus', 'Activo')
             ->count();
         
-        // Clientes pendientes (tipo 'P' - Prospectos)
-        $clientesPendientes = Cliente::where('tipo_cliente', 'P')->count();
+        // Clientes pendientes - EXCLUYE ELIMINADOS
+        $clientesPendientes = Cliente::whereNull('eliminado_en')
+            ->where('estatus', 'pendiente')
+            ->count();
         
-        // Clientes con pensión (todos IMSS/ISSSTE)
-        $clientesConPension = Cliente::whereHas('instituto', function($query) {
-            $query->whereIn('codigo', ['IMSS', 'ISSSTE']);
-        })->count();
+        // Clientes con pensión - EXCLUYE ELIMINADOS
+        $clientesConPension = Cliente::whereNull('eliminado_en')
+            ->where(function($query) {
+                $query->whereNotNull('pension_default')
+                      ->orWhereNotNull('pension_normal')
+                      ->orWhere('pension_default', '>', 0)
+                      ->orWhere('pension_normal', '>', 0);
+            })
+            ->count();
         
-        // Clientes por institución (IMSS e ISSSTE)
-        $clientesIMSS = Cliente::whereHas('instituto', function($query) {
-            $query->where('codigo', 'IMSS');
-        })->count();
+        // Clientes por institución - EXCLUYE ELIMINADOS
+        $clientesIMSS = Cliente::whereNull('eliminado_en')
+            ->where(function($q) {
+                $q->where('instituto_id', 1)
+                  ->orWhere('instituto2_id', 1);
+            })
+            ->count();
         
-        $clientesISSSTE = Cliente::whereHas('instituto', function($query) {
-            $query->where('codigo', 'ISSSTE');
-        })->count();
+        $clientesISSSTE = Cliente::whereNull('eliminado_en')
+            ->where(function($q) {
+                $q->where('instituto_id', 2)
+                  ->orWhere('instituto2_id', 2);
+            })
+            ->count();
         
-        // Clientes agregados en el mes actual
-        $inicioMes = Carbon::now()->startOfMonth();
-        $finMes = Carbon::now()->endOfMonth();
-        $clientesMes = Cliente::whereBetween('creado_en', [$inicioMes, $finMes])->count();
+        // Clientes agregados este mes - EXCLUYE ELIMINADOS
+        $clientesMes = Cliente::whereNull('eliminado_en')
+            ->whereMonth('creado_en', Carbon::now()->month)
+            ->whereYear('creado_en', Carbon::now()->year)
+            ->count();
         
         return response()->json([
             'totalClientes' => $totalClientes,
             'clientesActivos' => $clientesActivos,
             'clientesPendientes' => $clientesPendientes,
             'clientesConPension' => $clientesConPension,
-            'clientesMes' => $clientesMes,
             'clientesIMSS' => $clientesIMSS,
             'clientesISSSTE' => $clientesISSSTE,
+            'clientesMes' => $clientesMes,
+            'success' => true,
+            'timestamp' => now()->format('Y-m-d H:i:s')
         ]);
     }
-    
-    // Métodos para perfil (placeholder)
+
+    /**
+     * Display the user profile.
+     */
     public function perfil()
     {
-        return view('perfil.index');
+        $user = auth()->user();
+        return view('dashboard.perfil', compact('user'));
     }
-    
-    public function actualizarPerfil()
+
+    /**
+     * Update the user profile.
+     */
+    public function actualizarPerfil(Request $request)
     {
-        // Implementar lógica de actualización de perfil
-        return back()->with('success', 'Perfil actualizado correctamente');
+        $user = auth()->user();
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+        
+        $user->name = $request->name;
+        $user->email = $request->email;
+        
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->password);
+        }
+        
+        $user->save();
+        
+        return redirect()->route('perfil')
+            ->with('success', 'Perfil actualizado exitosamente.');
     }
 }
