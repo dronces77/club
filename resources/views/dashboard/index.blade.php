@@ -9,11 +9,8 @@
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-calendar me-1"></i> Hoy
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-calendar-alt me-1"></i> Este mes
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarContadores()">
+                <i class="fas fa-sync-alt me-1"></i> Actualizar
             </button>
         </div>
         <a href="{{ route('clientes.create') }}" class="btn btn-sm btn-primary">
@@ -28,7 +25,7 @@
         <div class="stat-card primary">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold">{{ $estadisticas['total_clientes'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="total-clientes">{{ $estadisticas['total_clientes'] ?? 0 }}</h2>
                     <p class="mb-0">Total Clientes</p>
                 </div>
                 <div class="stat-icon">
@@ -42,7 +39,7 @@
         <div class="stat-card success">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold">{{ $estadisticas['clientes_activos'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-activos">{{ $estadisticas['clientes_activos'] ?? 0 }}</h2>
                     <p class="mb-0">Clientes Activos</p>
                 </div>
                 <div class="stat-icon">
@@ -56,7 +53,7 @@
         <div class="stat-card warning">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold">{{ $estadisticas['clientes_pendientes'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-pendientes">{{ $estadisticas['clientes_pendientes'] ?? 0 }}</h2>
                     <p class="mb-0">Clientes Pendientes</p>
                 </div>
                 <div class="stat-icon">
@@ -70,7 +67,7 @@
         <div class="stat-card danger">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold">{{ ($estadisticas['clientes_institucion']['imss'] ?? 0) + ($estadisticas['clientes_institucion']['issste'] ?? 0) }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-con-pension">{{ $estadisticas['clientes_con_pension'] ?? 0 }}</h2>
                     <p class="mb-0">Con Pensión</p>
                 </div>
                 <div class="stat-icon">
@@ -92,16 +89,16 @@
                 <div class="row text-center">
                     <div class="col-md-6 mb-3">
                         <div class="p-3 border rounded">
-                            <h3 class="text-primary">{{ $estadisticas['clientes_institucion']['imss'] ?? 0 }}</h3>
+                            <h3 class="text-primary" id="clientes-imss">{{ $estadisticas['clientes_institucion']['imss'] ?? 0 }}</h3>
                             <p class="mb-0">IMSS</p>
                             <small class="text-muted">Instituto Mexicano del Seguro Social</small>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="p-3 border rounded">
-                            <h3 class="text-success">{{ $estadisticas['clientes_institucion']['issste'] ?? 0 }}</h3>
+                            <h3 class="text-success" id="clientes-issste">{{ $estadisticas['clientes_institucion']['issste'] ?? 0 }}</h3>
                             <p class="mb-0">ISSSTE</p>
-                            <small class="text-muted">Instituto de Seguridad y Servicios Sociales</small>
+                            <small class="text-muted">Instituto de Seguridad y Servicios Sociales de los Trabajadores del Estado</small>
                         </div>
                     </div>
                 </div>
@@ -120,7 +117,7 @@
                         <span>
                             <i class="fas fa-user-plus text-success me-2"></i> Clientes agregados este mes
                         </span>
-                        <span class="badge bg-success rounded-pill">0</span>
+                        <span class="badge bg-success rounded-pill" id="clientes-mes">{{ $estadisticas['clientes_mes'] ?? 0 }}</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <span>
@@ -151,7 +148,7 @@
         </a>
     </div>
     <div class="card-body">
-        @if(isset($clientes_recientes) && $clientes_recientes->count() > 0)
+        @if($clientes_recientes->count() > 0)
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -160,7 +157,7 @@
                             <th>Nombre Completo</th>
                             <th>Institución</th>
                             <th>Estatus</th>
-                            <th>Fecha Alta</th>
+                            <th>Fecha Registro</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -184,16 +181,18 @@
                             </td>
                             <td>
                                 @php
-                                    $badgeClass = 'badge-pendiente';
-                                    if($cliente->estatus == 'Activo') $badgeClass = 'badge-activo';
-                                    elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge-suspendido';
+                                    $badgeClass = 'badge bg-secondary';
+                                    if($cliente->estatus == 'Activo') $badgeClass = 'badge bg-success';
+                                    elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge bg-warning';
+                                    elseif($cliente->estatus == 'Terminado') $badgeClass = 'badge bg-info';
+                                    elseif($cliente->estatus == 'Baja') $badgeClass = 'badge bg-danger';
                                 @endphp
-                                <span class="badge-estatus {{ $badgeClass }}">
+                                <span class="{{ $badgeClass }}">
                                     {{ $cliente->estatus }}
                                 </span>
                             </td>
                             <td>
-                                {{ $cliente->fecha_alta ? \Carbon\Carbon::parse($cliente->fecha_alta)->format('d/m/Y') : 'N/A' }}
+                                {{ $cliente->creado_en ? \Carbon\Carbon::parse($cliente->creado_en)->format('d/m/Y') : 'N/A' }}
                             </td>
                             <td>
                                 <a href="{{ route('clientes.show', $cliente) }}" class="btn btn-sm btn-outline-info">
@@ -255,4 +254,108 @@
         </div>
     </div>
 </div>
+
+<!-- Script para actualizar dashboard -->
+@push('scripts')
+<script>
+// Función para actualizar contadores
+function actualizarContadores() {
+    fetch('/dashboard/estadisticas')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Actualizar total de clientes
+            document.getElementById('total-clientes').textContent = data.total_clientes;
+            // Actualizar clientes activos
+            document.getElementById('clientes-activos').textContent = data.clientes_activos;
+            // Actualizar clientes pendientes
+            document.getElementById('clientes-pendientes').textContent = data.clientes_pendientes;
+            // Actualizar con pensión
+            document.getElementById('clientes-con-pension').textContent = data.clientes_con_pension;
+            // Actualizar IMSS
+            document.getElementById('clientes-imss').textContent = data.clientes_institucion.imss;
+            // Actualizar ISSSTE
+            document.getElementById('clientes-issste').textContent = data.clientes_institucion.issste;
+            // Actualizar clientes este mes
+            document.getElementById('clientes-mes').textContent = data.clientes_mes;
+            
+            // Mostrar mensaje de éxito
+            showToast('success', 'Dashboard actualizado correctamente');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Error al actualizar dashboard');
+        });
+}
+
+// Función para mostrar notificaciones tipo toast
+function showToast(type, message) {
+    // Crear elemento toast
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Agregar al documento
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    document.getElementById('toast-container').appendChild(toast);
+    
+    // Inicializar y mostrar toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Eliminar después de mostrar
+    toast.addEventListener('hidden.bs.toast', function () {
+        toast.remove();
+    });
+}
+
+// Actualizar automáticamente cada 30 segundos
+setInterval(actualizarContadores, 30000);
+
+// Actualizar cuando la página se carga
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar después de 2 segundos para asegurar que todo cargue
+    setTimeout(actualizarContadores, 2000);
+    
+    // Escuchar eventos personalizados de creación/actualización de clientes
+    window.addEventListener('cliente-creado', function() {
+        actualizarContadores();
+        // Recargar tabla de clientes recientes
+        setTimeout(function() {
+            location.reload();
+        }, 1000);
+    });
+    
+    window.addEventListener('cliente-actualizado', function() {
+        actualizarContadores();
+        // Recargar tabla de clientes recientes
+        setTimeout(function() {
+            location.reload();
+        }, 1000);
+    });
+});
+</script>
+@endpush
 @endsection
