@@ -272,6 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSearchTerm = '';
     
 // ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
+// ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
 function performAutoComplete(searchTerm) {
     if (searchTerm.length < 2) {
         hideSearchResults();
@@ -414,16 +415,16 @@ function performAutoComplete(searchTerm) {
         searchResults.style.display = 'block';
     }
     
-	function showError(message = 'Error en la búsqueda') {
-		searchResults.innerHTML = `
-			<div class="p-3 text-center text-danger">
-				<i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
-				<p class="mb-0">${message}</p>
-				<small>Intenta nuevamente</small>
-			</div>
-		`;
-		searchResults.style.display = 'block';
-	}
+function showError(message = 'Error en la búsqueda') {
+    searchResults.innerHTML = `
+        <div class="p-3 text-center text-danger">
+            <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+            <p class="mb-0">${message}</p>
+            <small>Intenta nuevamente</small>
+        </div>
+    `;
+    searchResults.style.display = 'block';
+}
     
     function hideSearchResults() {
         searchResults.style.display = 'none';
