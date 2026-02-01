@@ -37,11 +37,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/estadisticas', [DashboardController::class, 'estadisticas'])->name('dashboard.estadisticas');
     
-    // Clientes (CRUD completo)
-    Route::resource('clientes', ClienteController::class);
-    
-    // Nueva ruta para búsqueda en tiempo real
+    // **********************************************
+    // CORRECCIÓN CRÍTICA: ESTA RUTA DEBE IR ANTES
+    // **********************************************
     Route::get('/clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
+    
+    // Clientes (CRUD completo) - ESTA VA DESPUÉS
+    Route::resource('clientes', ClienteController::class);
     
     // Rutas adicionales para clientes
     Route::get('/clientes/{cliente}/cambiar-estatus', [ClienteController::class, 'cambiarEstatus'])->name('clientes.cambiar-estatus');
