@@ -96,10 +96,106 @@ class ClienteController extends Controller
             
             $cliente = Cliente::create($validated);
             
+            // Guardar CURPs
+            if ($request->filled('curp')) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp' => $request->curp,
+                    'es_principal' => true
+                ]);
+            }
+            if ($request->filled('curp2')) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp' => $request->curp2,
+                    'es_principal' => false
+                ]);
+            }
+            if ($request->filled('curp3')) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp' => $request->curp3,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // Guardar RFCs
+            if ($request->filled('rfc')) {
+                ClienteRfc::create([
+                    'cliente_id' => $cliente->id,
+                    'rfc' => $request->rfc,
+                    'es_principal' => true
+                ]);
+            }
+            if ($request->filled('rfc2')) {
+                ClienteRfc::create([
+                    'cliente_id' => $cliente->id,
+                    'rfc' => $request->rfc2,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // Guardar NSS
+            if ($request->filled('nss')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss,
+                    'es_principal' => true
+                ]);
+            }
+            if ($request->filled('nss2')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss2,
+                    'es_principal' => false
+                ]);
+            }
+            if ($request->filled('nss3')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss3,
+                    'es_principal' => false
+                ]);
+            }
+            if ($request->filled('nss4')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss4,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // Guardar contactos
+            $contactos = [
+                'celular1' => $request->celular1,
+                'celular2' => $request->celular2,
+                'tel_casa' => $request->tel_casa,
+                'correo1' => $request->correo1,
+                'correo2' => $request->correo2,
+                'correo_personal' => $request->correo_personal,
+            ];
+            
+            foreach ($contactos as $tipo => $valor) {
+                if (!empty($valor)) {
+                    ClienteContacto::create([
+                        'cliente_id' => $cliente->id,
+                        'tipo' => $tipo,
+                        'valor' => $valor,
+                        'es_principal' => $tipo === 'celular1' || $tipo === 'correo1'
+                    ]);
+                }
+            }
+            
             DB::commit();
             
+            // Emitir evento para actualizar dashboard
+            echo "<script>
+                window.dispatchEvent(new CustomEvent('cliente-creado'));
+            </script>";
+            
             return redirect()->route('clientes.index')
-                ->with('success', "Cliente creado exitosamente, No. Cliente: {$cliente->no_cliente}");
+                ->with('success', "Cliente creado exitosamente, No. Cliente: {$cliente->no_cliente}")
+                ->with('event_script', true);
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -194,67 +290,238 @@ class ClienteController extends Controller
         ));
     }
 
-public function update(Request $request, Cliente $cliente)
-{
-    if ($cliente->tipo_cliente !== 'C') {
-        return back()->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
-    }
-    
-    $rules = Cliente::$rulesUpdate;
-    
-    // ... (resto de validaciones únicas)
-    
-    // IMPORTANTE: Si se selecciona ISSSTE, hacer obligatorios los campos
-    if ($request->filled('instituto2_id') && $request->instituto2_id == 2) {
-        $rules['regimen2_id'] = 'required|exists:catalogo_regimenes,id';
-        $rules['tramite2_id'] = 'required|exists:catalogo_tramites,id';
-        $rules['modalidad_issste'] = 'required|in:NA,CV';
-    }
-    
-    $validated = $request->validate($rules);
-    
-    try {
-        DB::beginTransaction();
-        
-        $validated['actualizado_por'] = auth()->id();
-        
-        if ($request->filled('fecha_nacimiento')) {
-            $validated['edad'] = Carbon::parse($request->fecha_nacimiento)->age;
+    public function update(Request $request, Cliente $cliente)
+    {
+        if ($cliente->tipo_cliente !== 'C') {
+            return back()->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
         }
         
-        // IMPORTANTE: Limpiar campos ISSSTE si no se seleccionó ISSSTE (id=2)
-        // También limpiar si se seleccionó N/A (valor vacío)
-        if (!$request->filled('instituto2_id') || $request->instituto2_id != 2) {
-            $validated['instituto2_id'] = null;
-            $validated['regimen2_id'] = null;
-            $validated['tramite2_id'] = null;
-            $validated['modalidad_issste'] = null;
-            $validated['nss_issste'] = null;
-            $validated['fecha_alta_issste'] = null;
-            $validated['fecha_baja_issste'] = null;
-            $validated['anios_servicio_issste'] = null;
+        $rules = Cliente::$rulesUpdate;
+        
+        // Validaciones únicas
+        $rules['curp'] = ['required', 'max:18', function ($attribute, $value, $fail) use ($cliente) {
+            $exists = ClienteCurp::where('curp', $value)
+                ->where('cliente_id', '!=', $cliente->id)
+                ->exists();
+            if ($exists) {
+                $fail('Esta CURP ya está registrada para otro cliente.');
+            }
+        }];
+        
+        $rules['rfc'] = ['required', 'max:13', function ($attribute, $value, $fail) use ($cliente) {
+            $exists = ClienteRfc::where('rfc', $value)
+                ->where('cliente_id', '!=', $cliente->id)
+                ->exists();
+            if ($exists) {
+                $fail('Este RFC ya está registrado para otro cliente.');
+            }
+        }];
+        
+        $rules['nss'] = ['required', 'max:11', function ($attribute, $value, $fail) use ($cliente) {
+            $exists = ClienteNss::where('nss', $value)
+                ->where('cliente_id', '!=', $cliente->id)
+                ->exists();
+            if ($exists) {
+                $fail('Este NSS ya está registrado para otro cliente.');
+            }
+        }];
+        
+        // IMPORTANTE: Si se selecciona ISSSTE, hacer obligatorios los campos
+        if ($request->filled('instituto2_id') && $request->instituto2_id == 2) {
+            $rules['regimen2_id'] = 'required|exists:catalogo_regimenes,id';
+            $rules['tramite2_id'] = 'required|exists:catalogo_tramites,id';
+            $rules['modalidad_issste'] = 'required|in:NA,CV';
         }
         
-        $cliente->update($validated);
+        $validated = $request->validate($rules);
         
-        $this->manejarCurps($cliente, $request);
-        $this->manejarRfcs($cliente, $request);
-        $this->manejarNss($cliente, $request);
-        $this->manejarContactos($cliente, $request);
-        
-        DB::commit();
-        
-        return redirect()->route('clientes.show', $cliente)
-            ->with('success', 'Cliente actualizado exitosamente.');
+        try {
+            DB::beginTransaction();
             
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        return back()
-            ->withInput()
-            ->with('error', 'Error al actualizar el cliente: ' . $e->getMessage());
+            $validated['actualizado_por'] = auth()->id();
+            
+            if ($request->filled('fecha_nacimiento')) {
+                $validated['edad'] = Carbon::parse($request->fecha_nacimiento)->age;
+            }
+            
+            // IMPORTANTE: Limpiar campos ISSSTE si no se seleccionó ISSSTE (id=2)
+            // También limpiar si se seleccionó N/A (valor vacío)
+            if (!$request->filled('instituto2_id') || $request->instituto2_id != 2) {
+                $validated['instituto2_id'] = null;
+                $validated['regimen2_id'] = null;
+                $validated['tramite2_id'] = null;
+                $validated['modalidad_issste'] = null;
+                $validated['nss_issste'] = null;
+                $validated['fecha_alta_issste'] = null;
+                $validated['fecha_baja_issste'] = null;
+                $validated['anios_servicio_issste'] = null;
+            }
+            
+            $cliente->update($validated);
+            
+            // ========== MANEJAR CURPs (CORREGIDO) ==========
+            // 1. Buscar el CURP principal existente
+            $curpPrincipalExistente = $cliente->curps()->where('es_principal', true)->first();
+            
+            // 2. Manejar CURP principal
+            if ($request->filled('curp')) {
+                if ($curpPrincipalExistente) {
+                    // ACTUALIZAR el registro existente (no crear uno nuevo)
+                    $curpPrincipalExistente->update(['curp' => $request->curp]);
+                } else {
+                    // CREAR solo si no existe
+                    ClienteCurp::create([
+                        'cliente_id' => $cliente->id,
+                        'curp' => $request->curp,
+                        'es_principal' => true
+                    ]);
+                }
+            } elseif ($curpPrincipalExistente) {
+                // Si el campo viene vacío pero existía, eliminarlo
+                $curpPrincipalExistente->delete();
+            }
+            
+            // 3. Manejar CURPs secundarias (curp2, curp3)
+            // Para las secundarias, podemos borrar y crear porque no tienen restricción única entre sí
+            $cliente->curps()->where('es_principal', false)->delete();
+            
+            if ($request->filled('curp2')) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp' => $request->curp2,
+                    'es_principal' => false
+                ]);
+            }
+            
+            if ($request->filled('curp3')) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp' => $request->curp3,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // ========== MANEJAR RFCs (CORREGIDO) ==========
+            // 1. Buscar el RFC principal existente
+            $rfcPrincipalExistente = $cliente->rfcs()->where('es_principal', true)->first();
+            
+            // 2. Manejar RFC principal
+            if ($request->filled('rfc')) {
+                if ($rfcPrincipalExistente) {
+                    // ACTUALIZAR el registro existente
+                    $rfcPrincipalExistente->update(['rfc' => $request->rfc]);
+                } else {
+                    // CREAR solo si no existe
+                    ClienteRfc::create([
+                        'cliente_id' => $cliente->id,
+                        'rfc' => $request->rfc,
+                        'es_principal' => true
+                    ]);
+                }
+            } elseif ($rfcPrincipalExistente) {
+                $rfcPrincipalExistente->delete();
+            }
+            
+            // 3. Manejar RFC secundario (rfc2)
+            $cliente->rfcs()->where('es_principal', false)->delete();
+            
+            if ($request->filled('rfc2')) {
+                ClienteRfc::create([
+                    'cliente_id' => $cliente->id,
+                    'rfc' => $request->rfc2,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // ========== MANEJAR NSS (CORREGIDO) ==========
+            // 1. Buscar el NSS principal existente
+            $nssPrincipalExistente = $cliente->nss()->where('es_principal', true)->first();
+            
+            // 2. Manejar NSS principal
+            if ($request->filled('nss')) {
+                if ($nssPrincipalExistente) {
+                    // ACTUALIZAR el registro existente
+                    $nssPrincipalExistente->update(['nss' => $request->nss]);
+                } else {
+                    // CREAR solo si no existe
+                    ClienteNss::create([
+                        'cliente_id' => $cliente->id,
+                        'nss' => $request->nss,
+                        'es_principal' => true
+                    ]);
+                }
+            } elseif ($nssPrincipalExistente) {
+                $nssPrincipalExistente->delete();
+            }
+            
+            // 3. Manejar NSS secundarios (nss2, nss3, nss4)
+            $cliente->nss()->where('es_principal', false)->delete();
+            
+            if ($request->filled('nss2')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss2,
+                    'es_principal' => false
+                ]);
+            }
+            
+            if ($request->filled('nss3')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss3,
+                    'es_principal' => false
+                ]);
+            }
+            
+            if ($request->filled('nss4')) {
+                ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss' => $request->nss4,
+                    'es_principal' => false
+                ]);
+            }
+            
+            // ========== MANEJAR CONTACTOS (MANTENER IGUAL) ==========
+            $cliente->contactos()->delete();
+            $tiposContacto = [
+                'celular1' => $request->celular1,
+                'celular2' => $request->celular2,
+                'tel_casa' => $request->tel_casa,
+                'correo1' => $request->correo1,
+                'correo2' => $request->correo2,
+                'correo_personal' => $request->correo_personal,
+            ];
+            
+            foreach ($tiposContacto as $tipo => $valor) {
+                if (!empty($valor)) {
+                    ClienteContacto::create([
+                        'cliente_id' => $cliente->id,
+                        'tipo' => $tipo,
+                        'valor' => $valor,
+                        'es_principal' => $tipo === 'celular1' || $tipo === 'correo1'
+                    ]);
+                }
+            }
+            
+            DB::commit();
+            
+            // Emitir evento para actualizar dashboard
+            echo "<script>
+                window.dispatchEvent(new CustomEvent('cliente-actualizado'));
+            </script>";
+            
+            return redirect()->route('clientes.show', $cliente)
+                ->with('success', 'Cliente actualizado exitosamente.')
+                ->with('event_script', true);
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Error al actualizar el cliente: ' . $e->getMessage());
+        }
     }
-}
 
     public function destroy(Cliente $cliente)
     {
@@ -348,6 +615,11 @@ public function update(Request $request, Cliente $cliente)
 
     public function cambiarEstatus(Request $request, Cliente $cliente)
     {
+        return view('clientes.cambiar-estatus', compact('cliente'));
+    }
+    
+    public function cambiarEstatusUpdate(Request $request, Cliente $cliente)
+    {
         $request->validate([
             'estatus' => 'required|in:Activo,Suspendido,Terminado,Baja',
         ]);
@@ -356,7 +628,14 @@ public function update(Request $request, Cliente $cliente)
         $cliente->actualizado_por = auth()->id();
         $cliente->save();
         
-        return back()->with('success', 'Estatus actualizado a: ' . $request->estatus);
+        // Emitir evento para actualizar dashboard
+        echo "<script>
+            window.dispatchEvent(new CustomEvent('cliente-actualizado'));
+        </script>";
+        
+        return redirect()->route('clientes.show', $cliente)
+            ->with('success', 'Estatus actualizado a: ' . $request->estatus)
+            ->with('event_script', true);
     }
 
     public function estadisticas()
@@ -380,119 +659,6 @@ public function update(Request $request, Cliente $cliente)
         return response()->json($estadisticas);
     }
 
-    // MÉTODOS AUXILIARES CORREGIDOS
-    private function manejarCurps($cliente, $request)
-    {
-        $cliente->curps()->delete();
-        
-        if ($request->filled('curp')) {
-            ClienteCurp::create([
-                'cliente_id' => $cliente->id,
-                'curp' => $request->curp,
-                'es_principal' => true
-            ]);
-        }
-        
-        if ($request->filled('curp2')) {
-            ClienteCurp::create([
-                'cliente_id' => $cliente->id,
-                'curp' => $request->curp2,
-                'es_principal' => false
-            ]);
-        }
-        
-        if ($request->filled('curp3')) {
-            ClienteCurp::create([
-                'cliente_id' => $cliente->id,
-                'curp' => $request->curp3,
-                'es_principal' => false
-            ]);
-        }
-    }
-    
-    private function manejarRfcs($cliente, $request)
-    {
-        $cliente->rfcs()->delete();
-        
-        if ($request->filled('rfc')) {
-            ClienteRfc::create([
-                'cliente_id' => $cliente->id,
-                'rfc' => $request->rfc,
-                'es_principal' => true
-            ]);
-        }
-        
-        if ($request->filled('rfc2')) {
-            ClienteRfc::create([
-                'cliente_id' => $cliente->id,
-                'rfc' => $request->rfc2,
-                'es_principal' => false
-            ]);
-        }
-    }
-    
-    private function manejarNss($cliente, $request)
-    {
-        $cliente->nss()->delete();
-        
-        if ($request->filled('nss')) {
-            ClienteNss::create([
-                'cliente_id' => $cliente->id,
-                'nss' => $request->nss,
-                'es_principal' => true
-            ]);
-        }
-        
-        if ($request->filled('nss2')) {
-            ClienteNss::create([
-                'cliente_id' => $cliente->id,
-                'nss' => $request->nss2,
-                'es_principal' => false
-            ]);
-        }
-        
-        if ($request->filled('nss3')) {
-            ClienteNss::create([
-                'cliente_id' => $cliente->id,
-                'nss' => $request->nss3,
-                'es_principal' => false
-            ]);
-        }
-        
-        if ($request->filled('nss4')) {
-            ClienteNss::create([
-                'cliente_id' => $cliente->id,
-                'nss' => $request->nss4,
-                'es_principal' => false
-            ]);
-        }
-    }
-    
-    private function manejarContactos($cliente, $request)
-    {
-        $cliente->contactos()->delete();
-        
-        $tiposContacto = [
-            'celular1' => $request->celular1,
-            'celular2' => $request->celular2,
-            'tel_casa' => $request->tel_casa,
-            'correo1' => $request->correo1,
-            'correo2' => $request->correo2,
-            'correo_personal' => $request->correo_personal,
-        ];
-        
-        foreach ($tiposContacto as $tipo => $valor) {
-            if (!empty($valor)) {
-                ClienteContacto::create([
-                    'cliente_id' => $cliente->id,
-                    'tipo' => $tipo,
-                    'valor' => $valor,
-                    'es_principal' => $tipo === 'celular1' || $tipo === 'correo1'
-                ]);
-            }
-        }
-    }
-    
     public function getRegimenesPorInstituto($institutoId)
     {
         $regimenes = CatalogoRegimen::where('instituto_id', $institutoId)->get();
