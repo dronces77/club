@@ -19,7 +19,7 @@
     <div class="card-body">
         <form method="GET" action="{{ route('clientes.index') }}" id="searchForm" class="row g-3">
             <!-- Campo de búsqueda principal con autocomplete -->
-            <div class="col-md-4 position-relative">
+            <div class="col-md-6 position-relative">
                 <label for="search" class="form-label">Buscar Cliente</label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="search" name="search" 
@@ -36,7 +36,7 @@
             </div>
 
             <!-- Filtro de Estatus -->
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label for="estatus" class="form-label">Estatus</label>
                 <select class="form-select" id="estatus" name="estatus">
                     <option value="">Todos</option>
@@ -49,7 +49,7 @@
             </div>
 
             <!-- Filtro de Institución (IMSS/ISSSTE) -->
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label for="instituto_id" class="form-label">Institución</label>
                 <select class="form-select" id="instituto_id" name="instituto_id">
                     <option value="">Todas</option>
@@ -61,20 +61,9 @@
                 </select>
             </div>
 
-            <!-- Filtro de Tipo de Cliente -->
-            <div class="col-md-2">
-                <label for="tipo_cliente" class="form-label">Tipo Cliente</label>
-                <select class="form-select" id="tipo_cliente" name="tipo_cliente">
-                    <option value="">Todos</option>
-                    <option value="Cliente Interno" {{ request('tipo_cliente') == 'Cliente Interno' ? 'selected' : '' }}>Cliente Interno</option>
-                    <option value="Cliente Externo" {{ request('tipo_cliente') == 'Cliente Externo' ? 'selected' : '' }}>Cliente Externo</option>
-                    <option value="Otro" {{ request('tipo_cliente') == 'Otro' ? 'selected' : '' }}>Otro</option>
-                </select>
-            </div>
-
             <!-- Botones de acción -->
-            <div class="col-md-2 d-flex align-items-end">
-                <div class="btn-group w-100" role="group">
+            <div class="col-md-12 d-flex justify-content-end mt-3">
+                <div class="btn-group" role="group">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-1"></i> Buscar
                     </button>
@@ -282,55 +271,67 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchTimeout = null;
     let currentSearchTerm = '';
     
-    // ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
-    function performAutoComplete(searchTerm) {
-        if (searchTerm.length < 2) {
-            hideSearchResults();
-            return;
-        }
-        
-        if (searchTerm === currentSearchTerm) {
-            return; // Evita búsquedas duplicadas del mismo término
-        }
-        
-        currentSearchTerm = searchTerm;
-        
-        // Obtener valores actuales de los filtros para enviarlos en la búsqueda
-        const estatus = document.getElementById('estatus').value;
-        const institutoId = document.getElementById('instituto_id').value;
-        const tipoCliente = document.getElementById('tipo_cliente').value;
-        
-        // Mostrar indicador de carga
-        searchResults.innerHTML = `
-            <div class="p-3 text-center">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                    <span class="visually-hidden">Buscando...</span>
-                </div>
-                <span class="ms-2">Buscando clientes...</span>
-            </div>
-        `;
-        searchResults.style.display = 'block';
-        
-        // Realizar petición AJAX al endpoint de búsqueda
-        fetch(`{{ route('clientes.search') }}?q=${encodeURIComponent(searchTerm)}&estatus=${estatus}&instituto_id=${institutoId}&tipo_cliente=${tipoCliente}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.clientes && data.clientes.length > 0) {
-                    renderSearchResults(data.clientes);
-                } else {
-                    showNoResults();
-                }
-            })
-            .catch(error => {
-                console.error('Error en búsqueda:', error);
-                showError();
-            });
+// ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
+function performAutoComplete(searchTerm) {
+    if (searchTerm.length < 2) {
+        hideSearchResults();
+        return;
     }
+    
+    if (searchTerm === currentSearchTerm) {
+        return;
+    }
+    
+    currentSearchTerm = searchTerm;
+    
+    // Obtener valores actuales de los filtros
+    const estatus = document.getElementById('estatus').value;
+    const institutoId = document.getElementById('instituto_id').value;
+    
+    // Mostrar loading
+    searchResults.innerHTML = `
+        <div class="p-3 text-center">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <span class="ms-2">Buscando clientes...</span>
+        </div>
+    `;
+    searchResults.style.display = 'block';
+    
+    // URL CORREGIDA
+    const searchUrl = `/clientes/search?q=${encodeURIComponent(searchTerm)}&estatus=${estatus}&instituto_id=${institutoId}`;
+    
+    console.log('🔍 URL de búsqueda:', searchUrl);
+    
+    // Petición AJAX con timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+    
+    fetch(searchUrl, { signal: controller.signal })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Datos recibidos:', data);
+            if (data.success && data.clientes && data.clientes.length > 0) {
+                renderSearchResults(data.clientes);
+            } else {
+                showNoResults();
+            }
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.error('❌ Error en búsqueda:', error);
+            if (error.name === 'AbortError') {
+                showError('Tiempo de espera agotado');
+            } else {
+                showError('Error en la conexión');
+            }
+        });
+}
     
     // ========== FUNCIÓN PARA RENDERIZAR RESULTADOS ==========
     function renderSearchResults(clientes) {
@@ -383,15 +384,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsHtml += '</div>';
         
+		// Agregar opción para buscar con los filtros actuales
+		const estatusVal = document.getElementById('estatus').value;
+		const institutoIdVal = document.getElementById('instituto_id').value;
+
         // Agregar opción para buscar con los filtros actuales
-        resultsHtml += `
-            <div class="border-top p-2 bg-light">
-                <a href="{{ route('clientes.index') }}?search=${encodeURIComponent(currentSearchTerm)}&estatus=${document.getElementById('estatus').value}&instituto_id=${document.getElementById('instituto_id').value}&tipo_cliente=${document.getElementById('tipo_cliente').value}" 
-                   class="btn btn-sm btn-primary w-100">
-                   <i class="fas fa-search me-1"></i> Ver todos los resultados (${clientes.length})
-                </a>
-            </div>
-        `;
+		resultsHtml += `
+			<div class="border-top p-2 bg-light">
+				<a href="{{ route('clientes.index') }}?search=${encodeURIComponent(currentSearchTerm)}&estatus=${estatusVal}&instituto_id=${institutoIdVal}" 
+				class="btn btn-sm btn-primary w-100">
+				<i class="fas fa-search me-1"></i> Ver todos los resultados (${clientes.length})
+				</a>
+			</div>
+		`;
         
         searchResults.innerHTML = resultsHtml;
         searchResults.style.display = 'block';
@@ -409,16 +414,16 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.style.display = 'block';
     }
     
-    function showError() {
-        searchResults.innerHTML = `
-            <div class="p-3 text-center text-danger">
-                <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
-                <p class="mb-0">Error en la búsqueda</p>
-                <small>Intenta nuevamente</small>
-            </div>
-        `;
-        searchResults.style.display = 'block';
-    }
+	function showError(message = 'Error en la búsqueda') {
+		searchResults.innerHTML = `
+			<div class="p-3 text-center text-danger">
+				<i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+				<p class="mb-0">${message}</p>
+				<small>Intenta nuevamente</small>
+			</div>
+		`;
+		searchResults.style.display = 'block';
+	}
     
     function hideSearchResults() {
         searchResults.style.display = 'none';
@@ -559,9 +564,9 @@ document.addEventListener('DOMContentLoaded', function() {
         searchForm.submit();
     });
     
-    document.getElementById('tipo_cliente').addEventListener('change', function() {
-        searchForm.submit();
-    });
+    //document.getElementById('tipo_cliente').addEventListener('change', function() {
+    //    searchForm.submit();
+    //});
     
     // Precargar resultados si hay un término de búsqueda al cargar la página
     if (searchInput.value.trim().length >= 2) {
