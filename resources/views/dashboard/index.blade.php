@@ -25,7 +25,7 @@
         <div class="stat-card primary">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold" id="total-clientes">{{ $estadisticas['total_clientes'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="total-clientes">{{ $totalClientes ?? 0 }}</h2>
                     <p class="mb-0">Total Clientes</p>
                 </div>
                 <div class="stat-icon">
@@ -39,7 +39,7 @@
         <div class="stat-card success">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold" id="clientes-activos">{{ $estadisticas['clientes_activos'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-activos">{{ $clientesActivos ?? 0 }}</h2>
                     <p class="mb-0">Clientes Activos</p>
                 </div>
                 <div class="stat-icon">
@@ -53,7 +53,7 @@
         <div class="stat-card warning">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold" id="clientes-pendientes">{{ $estadisticas['clientes_pendientes'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-pendientes">{{ $clientesPendientes ?? 0 }}</h2>
                     <p class="mb-0">Clientes Pendientes</p>
                 </div>
                 <div class="stat-icon">
@@ -67,7 +67,7 @@
         <div class="stat-card danger">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="display-6 fw-bold" id="clientes-con-pension">{{ $estadisticas['clientes_con_pension'] ?? 0 }}</h2>
+                    <h2 class="display-6 fw-bold" id="clientes-con-pension">{{ $clientesConPension ?? 0 }}</h2>
                     <p class="mb-0">Con Pensión</p>
                 </div>
                 <div class="stat-icon">
@@ -89,14 +89,14 @@
                 <div class="row text-center">
                     <div class="col-md-6 mb-3">
                         <div class="p-3 border rounded">
-                            <h3 class="text-primary" id="clientes-imss">{{ $estadisticas['clientes_institucion']['imss'] ?? 0 }}</h3>
+                            <h3 class="text-primary" id="clientes-imss">{{ $clientesIMSS ?? 0 }}</h3>
                             <p class="mb-0">IMSS</p>
                             <small class="text-muted">Instituto Mexicano del Seguro Social</small>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="p-3 border rounded">
-                            <h3 class="text-success" id="clientes-issste">{{ $estadisticas['clientes_institucion']['issste'] ?? 0 }}</h3>
+                            <h3 class="text-success" id="clientes-issste">{{ $clientesISSSTE ?? 0 }}</h3>
                             <p class="mb-0">ISSSTE</p>
                             <small class="text-muted">Instituto de Seguridad y Servicios Sociales de los Trabajadores del Estado</small>
                         </div>
@@ -117,7 +117,7 @@
                         <span>
                             <i class="fas fa-user-plus text-success me-2"></i> Clientes agregados este mes
                         </span>
-                        <span class="badge bg-success rounded-pill" id="clientes-mes">{{ $estadisticas['clientes_mes'] ?? 0 }}</span>
+                        <span class="badge bg-success rounded-pill" id="clientes-mes">{{ $clientesMes ?? 0 }}</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <span>
@@ -148,7 +148,7 @@
         </a>
     </div>
     <div class="card-body">
-        @if($clientes_recientes->count() > 0)
+        @if($clientesRecientes->count() > 0)
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -162,7 +162,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($clientes_recientes as $cliente)
+                        @foreach($clientesRecientes as $cliente)
                         <tr>
                             <td>
                                 <span class="badge bg-light text-dark">{{ $cliente->no_cliente ?? 'N/A' }}</span>
@@ -269,19 +269,19 @@ function actualizarContadores() {
         })
         .then(data => {
             // Actualizar total de clientes
-            document.getElementById('total-clientes').textContent = data.total_clientes;
+            document.getElementById('total-clientes').textContent = data.totalClientes;
             // Actualizar clientes activos
-            document.getElementById('clientes-activos').textContent = data.clientes_activos;
+            document.getElementById('clientes-activos').textContent = data.clientesActivos;
             // Actualizar clientes pendientes
-            document.getElementById('clientes-pendientes').textContent = data.clientes_pendientes;
+            document.getElementById('clientes-pendientes').textContent = data.clientesPendientes;
             // Actualizar con pensión
-            document.getElementById('clientes-con-pension').textContent = data.clientes_con_pension;
+            document.getElementById('clientes-con-pension').textContent = data.clientesConPension;
             // Actualizar IMSS
-            document.getElementById('clientes-imss').textContent = data.clientes_institucion.imss;
+            document.getElementById('clientes-imss').textContent = data.clientesIMSS;
             // Actualizar ISSSTE
-            document.getElementById('clientes-issste').textContent = data.clientes_institucion.issste;
+            document.getElementById('clientes-issste').textContent = data.clientesISSSTE;
             // Actualizar clientes este mes
-            document.getElementById('clientes-mes').textContent = data.clientes_mes;
+            document.getElementById('clientes-mes').textContent = data.clientesMes;
             
             // Mostrar mensaje de éxito
             showToast('success', 'Dashboard actualizado correctamente');
