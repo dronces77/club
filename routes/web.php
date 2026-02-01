@@ -35,12 +35,13 @@ Route::middleware(['auth'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Ruta para API de estadísticas del dashboard
     Route::get('/dashboard/estadisticas', [DashboardController::class, 'estadisticas'])->name('dashboard.estadisticas');
     
     // Clientes (CRUD completo)
     Route::resource('clientes', ClienteController::class);
+    
+    // Nueva ruta para búsqueda en tiempo real
+    Route::get('/clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
     
     // Rutas adicionales para clientes
     Route::get('/clientes/{cliente}/cambiar-estatus', [ClienteController::class, 'cambiarEstatus'])->name('clientes.cambiar-estatus');
