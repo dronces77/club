@@ -17,52 +17,153 @@ use Illuminate\Support\Facades\DB;
 
 class ClienteController extends Controller
 {
-    public function index()
-    {
-        $query = Cliente::with(['instituto', 'regimen', 'tramite', 'modalidad'])
-            ->orderBy('creado_en', 'desc');
+// En ClienteController.php - Método index()
+public function index(Request $request)
+{
+    // Obtener todos los institutos para el filtro
+    $institutos = Instituto::orderBy('nombre')->get();
+    
+    // Construir consulta base con relaciones necesarias
+    $query = Cliente::with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss'])
+        ->orderBy('creado_en', 'desc');
+    
+    // Aplicar filtro de búsqueda general
+    if ($request->filled('search')) {
+        $searchTerm = $request->search;
         
-        if (request('search')) {
-            $query->where(function($q) {
-                $q->where('nombre', 'like', '%' . request('search') . '%')
-                  ->orWhere('apellido_paterno', 'like', '%' . request('search') . '%')
-                  ->orWhere('apellido_materno', 'like', '%' . request('search') . '%')
-                  ->orWhere('no_cliente', 'like', '%' . request('search') . '%');
-            });
-        }
-        
-        if (request('estatus')) {
-            $query->where('estatus', request('estatus'));
-        }
-        
-        if (request('instituto_id')) {
-            $query->where('instituto_id', request('instituto_id'));
-        }
-        
-        if (request('tipo_cliente')) {
-            $query->where('tipo_cliente', request('tipo_cliente'));
-        }
-        
-        $clientes = $query->paginate(20)->withQueryString();
-        
-        $institutos = CatalogoInstituto::where('activo', true)->get();
-        $totalClientes = Cliente::count();
-        $activosCount = Cliente::where('estatus', 'Activo')->count();
-        $pendientesCount = Cliente::where('estatus', 'pendiente')->count();
-        $imssCount = Cliente::whereHas('instituto', function($q) {
-            $q->where('codigo', 'IMSS');
-        })->count();
-        
-        return view('clientes.index', compact(
-            'clientes', 
-            'institutos',
-            'totalClientes',
-            'activosCount',
-            'pendientesCount',
-            'imssCount'
-        ));
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('nombre', 'like', '%' . $searchTerm . '%')
+              ->orWhere('apellido_paterno', 'like', '%' . $searchTerm . '%')
+              ->orWhere('apellido_materno', 'like', '%' . $searchTerm . '%')
+              ->orWhere('no_cliente', 'like', '%' . $searchTerm . '%')
+              ->orWhere('nss_issste', 'like', '%' . $searchTerm . '%')
+              ->orWhereHas('curps', function($curpQuery) use ($searchTerm) {
+                  $curpQuery->where('curp', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('rfcs', function($rfcQuery) use ($searchTerm) {
+                  $rfcQuery->where('rfc', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('nss', function($nssQuery) use ($searchTerm) {
+                  $nssQuery->where('nss', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('contactos', function($contactoQuery) use ($searchTerm) {
+                  $contactoQuery->whereIn('tipo', ['celular1', 'celular2', 'tel_casa'])
+                               ->where('valor', 'like', '%' . $searchTerm . '%');
+              });
+        });
     }
+    
+    // Aplicar filtro de estatus
+    if ($request->filled('estatus')) {
+        $query->where('estatus', $request->estatus);
+    }
+    
+    // Aplicar filtro de institución (IMSS/ISSSTE) - ESTO ES LO CORREGIDO
+    if ($request->filled('instituto_id')) {
+        $institutoId = $request->instituto_id;
+        $query->where(function($q) use ($institutoId) {
+            $q->where('instituto_id', $institutoId)
+              ->orWhere('instituto2_id', $institutoId);
+        });
+    }
+    
+    // Aplicar filtro de tipo de cliente
+    if ($request->filled('tipo_cliente')) {
+        $query->where('tipo_cliente', $request->tipo_cliente);
+    }
+    
+    // Paginar resultados
+    $clientes = $query->paginate(20);
+    
+    // Calcular estadísticas
+    $totalClientes = Cliente::count();
+    $activosCount = Cliente::where('estatus', 'Activo')->count();
+    $pendientesCount = Cliente::where('estatus', 'pendiente')->count();
+    $imssCount = Cliente::where('instituto_id', 1)->orWhere('instituto2_id', 1)->count();
+    
+    return view('clientes.index', compact(
+        'clientes',
+        'institutos',
+        'totalClientes',
+        'activosCount',
+        'pendientesCount',
+        'imssCount'
+    ));
+}
 
+    // ========== API PARA BÚSQUEDA EN TIEMPO REAL ==========
+// En ClienteController.php - Método search() para autocomplete
+public function search(Request $request)
+{
+    $query = Cliente::with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss'])
+        ->orderBy('creado_en', 'desc');
+    
+    if ($request->filled('q')) {
+        $searchTerm = $request->q;
+        
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('nombre', 'like', '%' . $searchTerm . '%')
+              ->orWhere('apellido_paterno', 'like', '%' . $searchTerm . '%')
+              ->orWhere('apellido_materno', 'like', '%' . $searchTerm . '%')
+              ->orWhere('no_cliente', 'like', '%' . $searchTerm . '%')
+              ->orWhere('nss_issste', 'like', '%' . $searchTerm . '%')
+              ->orWhereHas('curps', function($curpQuery) use ($searchTerm) {
+                  $curpQuery->where('curp', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('rfcs', function($rfcQuery) use ($searchTerm) {
+                  $rfcQuery->where('rfc', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('nss', function($nssQuery) use ($searchTerm) {
+                  $nssQuery->where('nss', 'like', '%' . $searchTerm . '%');
+              })
+              ->orWhereHas('contactos', function($contactoQuery) use ($searchTerm) {
+                  $contactoQuery->whereIn('tipo', ['celular1', 'celular2', 'tel_casa'])
+                               ->where('valor', 'like', '%' . $searchTerm . '%');
+              });
+        });
+    }
+    
+    // Aplicar filtros adicionales si existen
+    if ($request->filled('estatus')) {
+        $query->where('estatus', $request->estatus);
+    }
+    
+    if ($request->filled('instituto_id')) {
+        $institutoId = $request->instituto_id;
+        $query->where(function($q) use ($institutoId) {
+            $q->where('instituto_id', $institutoId)
+              ->orWhere('instituto2_id', $institutoId);
+        });
+    }
+    
+    if ($request->filled('tipo_cliente')) {
+        $query->where('tipo_cliente', $request->tipo_cliente);
+    }
+    
+    $clientes = $query->limit(10)->get();
+    
+    return response()->json([
+        'clientes' => $clientes->map(function($cliente) {
+            return [
+                'id' => $cliente->id,
+                'no_cliente' => $cliente->no_cliente,
+                'nombre_completo' => $cliente->nombre . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno,
+                'institucion' => $cliente->instituto ? $cliente->instituto->codigo : 'N/A',
+                'institucion2' => $cliente->instituto2 ? $cliente->instituto2->codigo : null,
+                'estatus' => $cliente->estatus,
+                'tipo_cliente' => $cliente->tipo_cliente,
+                'curp_principal' => $cliente->curps->where('es_principal', true)->first()->curp ?? null,
+                'rfc_principal' => $cliente->rfcs->where('es_principal', true)->first()->rfc ?? null,
+                'nss_principal' => $cliente->nss->where('es_principal', true)->first()->nss ?? null,
+                'show_url' => route('clientes.show', $cliente),
+                'edit_url' => route('clientes.edit', $cliente)
+            ];
+        }),
+        'total' => $clientes->count()
+    ]);
+}
+
+    // ========== MÉTODOS EXISTENTES (MANTENIDOS) ==========
     public function create()
     {
         $institutos = CatalogoInstituto::where('activo', true)->get();
