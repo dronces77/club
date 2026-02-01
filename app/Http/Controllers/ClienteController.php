@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Cliente;
-use App\Models\Instituto; // ESTA ES LA CLASE CORRECTA
+use App\Models\Instituto;
 use App\Models\CatalogoRegimen;
 use App\Models\CatalogoTramite;
 use App\Models\CatalogoModalidad;
@@ -20,81 +20,87 @@ class ClienteController extends Controller
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
-{
-    // Obtener todos los institutos para el filtro
-    $institutos = Instituto::orderBy('nombre')->get();
-    
-    // Construir consulta base con relaciones necesarias
-    $query = Cliente::with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss', 'contactos'])
-        ->orderBy('creado_en', 'desc');
-    
-    // Aplicar filtro de búsqueda general
-    if ($request->filled('search')) {
-        $searchTerm = $request->search;
+    public function index(Request $request)
+    {
+        // Obtener todos los institutos para el filtro
+        $institutos = Instituto::orderBy('nombre')->get();
         
-        $query->where(function($q) use ($searchTerm) {
-            $q->where('nombre', 'like', '%' . $searchTerm . '%')
-              ->orWhere('apellido_paterno', 'like', '%' . $searchTerm . '%')
-              ->orWhere('apellido_materno', 'like', '%' . $searchTerm . '%')
-              ->orWhere('no_cliente', 'like', '%' . $searchTerm . '%')
-              ->orWhere('nss_issste', 'like', '%' . $searchTerm . '%')
-              ->orWhereHas('curps', function($curpQuery) use ($searchTerm) {
-                  $curpQuery->where('curp', 'like', '%' . $searchTerm . '%');
-              })
-              ->orWhereHas('rfcs', function($rfcQuery) use ($searchTerm) {
-                  $rfcQuery->where('rfc', 'like', '%' . $searchTerm . '%');
-              })
-              ->orWhereHas('nss', function($nssQuery) use ($searchTerm) {
-                  $nssQuery->where('nss', 'like', '%' . $searchTerm . '%');
-              })
-              ->orWhereHas('contactos', function($contactoQuery) use ($searchTerm) {
-                  $contactoQuery->whereIn('tipo', ['celular1', 'celular2', 'tel_casa'])
-                               ->where('valor', 'like', '%' . $searchTerm . '%');
-              });
-        });
+        // Construir consulta base con relaciones necesarias - EXCLUYE ELIMINADOS
+        $query = Cliente::with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss', 'contactos'])
+            ->whereNull('eliminado_en') // SOLO ESTA LÍNEA NUEVA
+            ->orderBy('creado_en', 'desc');
+        
+        // Aplicar filtro de búsqueda general
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('nombre', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('apellido_paterno', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('apellido_materno', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('no_cliente', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('nss_issste', 'like', '%' . $searchTerm . '%')
+                  ->orWhereHas('curps', function($curpQuery) use ($searchTerm) {
+                      $curpQuery->where('curp', 'like', '%' . $searchTerm . '%');
+                  })
+                  ->orWhereHas('rfcs', function($rfcQuery) use ($searchTerm) {
+                      $rfcQuery->where('rfc', 'like', '%' . $searchTerm . '%');
+                  })
+                  ->orWhereHas('nss', function($nssQuery) use ($searchTerm) {
+                      $nssQuery->where('nss', 'like', '%' . $searchTerm . '%');
+                  })
+                  ->orWhereHas('contactos', function($contactoQuery) use ($searchTerm) {
+                      $contactoQuery->whereIn('tipo', ['celular1', 'celular2', 'tel_casa'])
+                                   ->where('valor', 'like', '%' . $searchTerm . '%');
+                  });
+            });
+        }
+        
+        // Aplicar filtro de estatus
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+        
+        // Aplicar filtro de institución (IMSS/ISSSTE)
+        if ($request->filled('instituto_id')) {
+            $institutoId = $request->instituto_id;
+            $query->where(function($q) use ($institutoId) {
+                $q->where('instituto_id', $institutoId)
+                  ->orWhere('instituto2_id', $institutoId);
+            });
+        }
+        
+        // Paginar resultados
+        $clientes = $query->paginate(20);
+        
+        // Calcular estadísticas - TAMBIÉN EXCLUYE ELIMINADOS
+        $totalClientes = Cliente::whereNull('eliminado_en')->count();
+        $activosCount = Cliente::whereNull('eliminado_en')->where('estatus', 'Activo')->count();
+        $pendientesCount = Cliente::whereNull('eliminado_en')->where('estatus', 'pendiente')->count();
+        $imssCount = Cliente::whereNull('eliminado_en')
+            ->where(function($q) {
+                $q->where('instituto_id', 1)
+                  ->orWhere('instituto2_id', 1);
+            })
+            ->count();
+        
+        return view('clientes.index', compact(
+            'clientes',
+            'institutos',
+            'totalClientes',
+            'activosCount',
+            'pendientesCount',
+            'imssCount'
+        ));
     }
-    
-    // Aplicar filtro de estatus
-    if ($request->filled('estatus')) {
-        $query->where('estatus', $request->estatus);
-    }
-    
-    // Aplicar filtro de institución (IMSS/ISSSTE) - CORREGIDO
-    if ($request->filled('instituto_id')) {
-        $institutoId = $request->instituto_id;
-        $query->where(function($q) use ($institutoId) {
-            $q->where('instituto_id', $institutoId)
-              ->orWhere('instituto2_id', $institutoId);
-        });
-    }
-    
-    // Paginar resultados
-    $clientes = $query->paginate(20);
-    
-    // Calcular estadísticas
-    $totalClientes = Cliente::count();
-    $activosCount = Cliente::where('estatus', 'Activo')->count();
-    $pendientesCount = Cliente::where('estatus', 'pendiente')->count();
-    $imssCount = Cliente::where('instituto_id', 1)->orWhere('instituto2_id', 1)->count();
-    
-    return view('clientes.index', compact(
-        'clientes',
-        'institutos',
-        'totalClientes',
-        'activosCount',
-        'pendientesCount',
-        'imssCount'
-    ));
-}
 
     /**
      * Búsqueda para autocomplete (usado por el JavaScript)
      */
-public function search(Request $request)
-{
-    try {
+    public function search(Request $request)
+    {
         $query = Cliente::with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss'])
+            ->whereNull('eliminado_en') // SOLO ESTA LÍNEA NUEVA
             ->orderBy('creado_en', 'desc');
         
         if ($request->filled('q')) {
@@ -139,7 +145,7 @@ public function search(Request $request)
         
         return response()->json([
             'clientes' => $clientes->map(function($cliente) {
-                // CORRECCIÓN CRÍTICA: manejo seguro de campos nulos
+                // CORRECCIÓN: manejo seguro de campos nulos
                 $nombre = $cliente->nombre ?? '';
                 $apellidoPaterno = $cliente->apellido_paterno ?? '';
                 $apellidoMaterno = $cliente->apellido_materno ?? '';
@@ -158,21 +164,9 @@ public function search(Request $request)
                     'edit_url' => route('clientes.edit', $cliente->id)
                 ];
             }),
-            'total' => $clientes->count(),
-            'success' => true
+            'total' => $clientes->count()
         ]);
-        
-    } catch (\Exception $e) {
-        \Log::error('Error en búsqueda autocomplete: ' . $e->getMessage());
-        
-        return response()->json([
-            'clientes' => [],
-            'total' => 0,
-            'success' => false,
-            'message' => 'Error en el servidor'
-        ], 500);
     }
-}
 
     public function create()
     {
@@ -182,6 +176,7 @@ public function search(Request $request)
         $modalidades = CatalogoModalidad::where('activo', true)->get();
         
         $clientesReferencia = Cliente::select('id', 'no_cliente', 'nombre', 'apellido_paterno', 'apellido_materno')
+            ->whereNull('eliminado_en') // SOLO ESTA LÍNEA NUEVA
             ->orderBy('nombre')
             ->get()
             ->map(function($cliente) {
@@ -349,6 +344,12 @@ public function search(Request $request)
 
     public function edit(Cliente $cliente)
     {
+        // Verificar si el cliente está eliminado
+        if ($cliente->eliminado_en) {
+            return redirect()->route('clientes.index')
+                ->with('error', 'No se puede editar un cliente eliminado.');
+        }
+        
         if ($cliente->tipo_cliente !== 'C') {
             return redirect()->route('clientes.show', $cliente)
                 ->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
@@ -368,6 +369,7 @@ public function search(Request $request)
         
         $clientesReferencia = Cliente::select('id', 'no_cliente', 'nombre', 'apellido_paterno', 'apellido_materno')
             ->where('id', '!=', $cliente->id)
+            ->whereNull('eliminado_en') // SOLO ESTA LÍNEA NUEVA
             ->orderBy('nombre')
             ->get()
             ->map(function($clienteRef) {
@@ -403,6 +405,11 @@ public function search(Request $request)
 
     public function update(Request $request, Cliente $cliente)
     {
+        // Verificar si el cliente está eliminado
+        if ($cliente->eliminado_en) {
+            return back()->with('error', 'No se puede actualizar un cliente eliminado.');
+        }
+        
         if ($cliente->tipo_cliente !== 'C') {
             return back()->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
         }
@@ -657,6 +664,7 @@ public function search(Request $request)
     public function exportar()
     {
         $clientes = Cliente::with(['instituto', 'regimen', 'tramite', 'modalidad'])
+            ->whereNull('eliminado_en') // SOLO ESTA LÍNEA NUEVA
             ->orderBy('creado_en', 'desc')
             ->get();
         
@@ -726,11 +734,23 @@ public function search(Request $request)
 
     public function cambiarEstatus(Request $request, Cliente $cliente)
     {
+        // Verificar si el cliente está eliminado
+        if ($cliente->eliminado_en) {
+            return redirect()->route('clientes.index')
+                ->with('error', 'No se puede cambiar el estatus de un cliente eliminado.');
+        }
+        
         return view('clientes.cambiar-estatus', compact('cliente'));
     }
     
     public function cambiarEstatusUpdate(Request $request, Cliente $cliente)
     {
+        // Verificar si el cliente está eliminado
+        if ($cliente->eliminado_en) {
+            return redirect()->route('clientes.index')
+                ->with('error', 'No se puede cambiar el estatus de un cliente eliminado.');
+        }
+        
         $request->validate([
             'estatus' => 'required|in:Activo,Suspendido,Terminado,Baja',
         ]);
@@ -752,19 +772,21 @@ public function search(Request $request)
     public function estadisticas()
     {
         $estadisticas = [
-            'total' => Cliente::count(),
-            'activos' => Cliente::where('estatus', 'Activo')->count(),
-            'pendientes' => Cliente::where('estatus', 'pendiente')->count(),
-            'suspendidos' => Cliente::where('estatus', 'Suspendido')->count(),
+            'total' => Cliente::whereNull('eliminado_en')->count(),
+            'activos' => Cliente::whereNull('eliminado_en')->where('estatus', 'Activo')->count(),
+            'pendientes' => Cliente::whereNull('eliminado_en')->where('estatus', 'pendiente')->count(),
+            'suspendidos' => Cliente::whereNull('eliminado_en')->where('estatus', 'Suspendido')->count(),
             'por_instituto' => Cliente::select('instituto_id', DB::raw('count(*) as total'))
+                ->whereNull('eliminado_en')
                 ->groupBy('instituto_id')
                 ->with('instituto')
                 ->get(),
             'por_tipo' => Cliente::select('tipo_cliente', DB::raw('count(*) as total'))
+                ->whereNull('eliminado_en')
                 ->groupBy('tipo_cliente')
                 ->get(),
-            'creados_hoy' => Cliente::whereDate('creado_en', today())->count(),
-            'actualizados_hoy' => Cliente::whereDate('actualizado_en', today())->count(),
+            'creados_hoy' => Cliente::whereDate('creado_en', today())->whereNull('eliminado_en')->count(),
+            'actualizados_hoy' => Cliente::whereDate('actualizado_en', today())->whereNull('eliminado_en')->count(),
         ];
         
         return response()->json($estadisticas);
