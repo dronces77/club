@@ -4,21 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CatalogoModalidad extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'catalogo_modalidades';
     protected $primaryKey = 'id';
-    
+
     protected $fillable = ['codigo', 'nombre', 'descripcion', 'activo'];
-    
+
     protected $casts = [
-        'activo' => 'boolean',
+        'activo'     => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
-    
-    // Relación con clientes
+
     public function clientes()
     {
         return $this->hasMany(Cliente::class, 'modalidad_id');
