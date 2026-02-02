@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
-use App\Models\Instituto;
+use App\Models\CatalogoInstituto;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -14,23 +14,17 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Total de clientes - EXCLUYE ELIMINADOS
-        $totalClientes = Cliente::whereNull('eliminado_en')->count();
+        // Total de clientes
+        $totalClientes = Cliente::count();
         
-        // Clientes activos - EXCLUYE ELIMINADOS
-        $clientesActivos = Cliente::whereNull('eliminado_en')
-            ->where('estatus', 'Activo')
-            ->count();
+        // Clientes activos
+        $clientesActivos = Cliente::where('estatus', 'Activo')->count();
         
-        // Clientes pendientes - EXCLUYE ELIMINADOS
-        $clientesPendientes = Cliente::whereNull('eliminado_en')
-            ->where('estatus', 'pendiente')
-            ->count();
+        // No existe 'pendiente' en nuevo schema
+        $clientesPendientes = 0;
         
-        // Clientes con pensión - EXCLUYE ELIMINADOS
-        // Ajusta esta lógica según tu definición de "con pensión"
-        $clientesConPension = Cliente::whereNull('eliminado_en')
-            ->where(function($query) {
+        // Clientes con pensión
+        $clientesConPension = Cliente::where(function($query) {
                 $query->whereNotNull('pension_default')
                       ->orWhereNotNull('pension_normal')
                       ->orWhere('pension_default', '>', 0)
@@ -38,31 +32,27 @@ class DashboardController extends Controller
             })
             ->count();
         
-        // Clientes por institución - EXCLUYE ELIMINADOS
-        $clientesIMSS = Cliente::whereNull('eliminado_en')
-            ->where(function($q) {
-                $q->where('instituto_id', 1) // IMSS
-                  ->orWhere('instituto2_id', 1);
+        // IDs según schema: IMSS=13, ISSSTE=14
+        $clientesIMSS = Cliente::where(function($q) {
+                $q->where('instituto_id', 13)
+                  ->orWhere('instituto2_id', 13);
             })
             ->count();
         
-        $clientesISSSTE = Cliente::whereNull('eliminado_en')
-            ->where(function($q) {
-                $q->where('instituto_id', 2) // ISSSTE
-                  ->orWhere('instituto2_id', 2);
+        $clientesISSSTE = Cliente::where(function($q) {
+                $q->where('instituto_id', 14)
+                  ->orWhere('instituto2_id', 14);
             })
             ->count();
         
-        // Clientes agregados este mes - EXCLUYE ELIMINADOS
-        $clientesMes = Cliente::whereNull('eliminado_en')
-            ->whereMonth('creado_en', Carbon::now()->month)
-            ->whereYear('creado_en', Carbon::now()->year)
+        // Clientes agregados este mes
+        $clientesMes = Cliente::whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
             ->count();
         
-        // Clientes recientes (últimos 10) - EXCLUYE ELIMINADOS
+        // Clientes recientes (últimos 10)
         $clientesRecientes = Cliente::with(['instituto', 'instituto2'])
-            ->whereNull('eliminado_en')
-            ->orderBy('creado_en', 'desc')
+            ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
         
@@ -83,22 +73,11 @@ class DashboardController extends Controller
      */
     public function estadisticas()
     {
-        // Total de clientes - EXCLUYE ELIMINADOS
-        $totalClientes = Cliente::whereNull('eliminado_en')->count();
+        $totalClientes = Cliente::count();
+        $clientesActivos = Cliente::where('estatus', 'Activo')->count();
+        $clientesPendientes = 0;
         
-        // Clientes activos - EXCLUYE ELIMINADOS
-        $clientesActivos = Cliente::whereNull('eliminado_en')
-            ->where('estatus', 'Activo')
-            ->count();
-        
-        // Clientes pendientes - EXCLUYE ELIMINADOS
-        $clientesPendientes = Cliente::whereNull('eliminado_en')
-            ->where('estatus', 'pendiente')
-            ->count();
-        
-        // Clientes con pensión - EXCLUYE ELIMINADOS
-        $clientesConPension = Cliente::whereNull('eliminado_en')
-            ->where(function($query) {
+        $clientesConPension = Cliente::where(function($query) {
                 $query->whereNotNull('pension_default')
                       ->orWhereNotNull('pension_normal')
                       ->orWhere('pension_default', '>', 0)
@@ -106,25 +85,20 @@ class DashboardController extends Controller
             })
             ->count();
         
-        // Clientes por institución - EXCLUYE ELIMINADOS
-        $clientesIMSS = Cliente::whereNull('eliminado_en')
-            ->where(function($q) {
-                $q->where('instituto_id', 1)
-                  ->orWhere('instituto2_id', 1);
+        $clientesIMSS = Cliente::where(function($q) {
+                $q->where('instituto_id', 13)
+                  ->orWhere('instituto2_id', 13);
             })
             ->count();
         
-        $clientesISSSTE = Cliente::whereNull('eliminado_en')
-            ->where(function($q) {
-                $q->where('instituto_id', 2)
-                  ->orWhere('instituto2_id', 2);
+        $clientesISSSTE = Cliente::where(function($q) {
+                $q->where('instituto_id', 14)
+                  ->orWhere('instituto2_id', 14);
             })
             ->count();
         
-        // Clientes agregados este mes - EXCLUYE ELIMINADOS
-        $clientesMes = Cliente::whereNull('eliminado_en')
-            ->whereMonth('creado_en', Carbon::now()->month)
-            ->whereYear('creado_en', Carbon::now()->year)
+        $clientesMes = Cliente::whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
             ->count();
         
         return response()->json([
@@ -140,29 +114,23 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Display the user profile.
-     */
     public function perfil()
     {
         $user = auth()->user();
         return view('dashboard.perfil', compact('user'));
     }
 
-    /**
-     * Update the user profile.
-     */
     public function actualizarPerfil(Request $request)
     {
         $user = auth()->user();
         
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'nombre' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:usuarios,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
         ]);
         
-        $user->name = $request->name;
+        $user->nombre = $request->nombre;
         $user->email = $request->email;
         
         if ($request->filled('password')) {
