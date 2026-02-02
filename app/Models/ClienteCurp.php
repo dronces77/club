@@ -4,18 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClienteCurp extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    protected $table = 'clientes_curp';
-    
-    // CONSTANTES CORRECTAS
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = null; // No tenemos columna updated_at
-    
+    protected $table = 'cliente_curps';
+
     protected $fillable = [
         'cliente_id',
         'curp',
@@ -24,7 +19,8 @@ class ClienteCurp extends Model
 
     protected $casts = [
         'es_principal' => 'boolean',
-        'creado_en' => 'datetime'
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
 
     public function cliente()
