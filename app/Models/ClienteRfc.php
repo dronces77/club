@@ -4,17 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClienteRfc extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    protected $table = 'clientes_rfc';
-    
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = null;
-    
+    protected $table = 'cliente_rfcs';
+
     protected $fillable = [
         'cliente_id',
         'rfc',
@@ -23,7 +19,8 @@ class ClienteRfc extends Model
 
     protected $casts = [
         'es_principal' => 'boolean',
-        'creado_en' => 'datetime'
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
 
     public function cliente()
