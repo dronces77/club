@@ -14,7 +14,6 @@ class AuthController extends Controller
      */
     public function showLoginForm()
     {
-        // Si ya está autenticado, redirigir al dashboard
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
@@ -23,110 +22,81 @@ class AuthController extends Controller
     }
 
     /**
-     * Procesar login
+     * Procesar login - VERSIÓN CORREGIDA
      */
     public function login(Request $request)
     {
-        // DEPURACIÓN - Mostrar datos recibidos
+        // DEPURACIÓN
         \Log::info('Intento de login:', [
-            'email' => $request->email,
-            'password_length' => strlen($request->password),
+            'login' => $request->login,
             'ip' => $request->ip()
         ]);
 
-        // Validar datos
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|min:6',
+        // ✅ CORREGIDO: Campo 'login' (acepta email O nombre)
+        $request->validate([
+            'login' => 'required|string',
+            'password' => 'required',
         ]);
 
-        // Buscar usuario por email
-        $usuario = Usuario::where('email', $credentials['email'])->first();
+        // ✅ CORREGIDO: Buscar por email O nombre
+        $usuario = Usuario::where('email', $request->login)
+            ->orWhere('nombre', $request->login)
+            ->first();
         
-        // DEPURACIÓN - Mostrar usuario encontrado
+        // DEPURACIÓN
         \Log::info('Usuario encontrado:', [
             'existe' => !!$usuario,
-            'id' => $usuario ? $usuario->id : null,
-            'activo' => $usuario ? $usuario->activo : null,
-            'username' => $usuario ? $usuario->username : null,
-            'hash_inicio' => $usuario ? substr($usuario->password_hash, 0, 20) . '...' : null
+            'id' => $usuario ? $usuario->id : null,  // ✅ 'id', no 'usuario_id'
+            'estatus' => $usuario ? $usuario->estatus : null,
+            'nombre' => $usuario ? $usuario->nombre : null,
+            'email' => $usuario ? $usuario->email : null
         ]);
 
         // Verificar si existe
         if (!$usuario) {
-            \Log::warning('Usuario no encontrado: ' . $credentials['email']);
+            \Log::warning('Usuario no encontrado: ' . $request->login);
             return back()
-                ->withInput($request->only('email', 'remember'))
+                ->withInput($request->only('login', 'remember'))
                 ->withErrors([
-                    'email' => 'Las credenciales no coinciden con nuestros registros.',
+                    'login' => 'Las credenciales no coinciden con nuestros registros.',
                 ]);
         }
 
-        // Verificar si el usuario está activo
-        if (!$usuario->activo) {
+        // ✅ CORREGIDO: Verificar estatus
+        if ($usuario->estatus !== 'activo') {
             \Log::warning('Usuario inactivo intentó login: ' . $usuario->email);
             return back()
-                ->withInput($request->only('email', 'remember'))
+                ->withInput($request->only('login', 'remember'))
                 ->withErrors([
-                    'email' => 'Tu cuenta está desactivada. Contacta al administrador.',
+                    'login' => 'Tu cuenta está desactivada. Contacta al administrador.',
                 ]);
         }
 
-        // VERIFICACIÓN ESPECIAL PARA DEBUG
-        // Primero probar password_verify normal
-        $passwordMatch = password_verify($credentials['password'], $usuario->password_hash);
+        // ✅ CORREGIDO: Verificar contraseña MANUALMENTE (no usar Auth::validate)
+        if (!Hash::check($request->password, $usuario->password)) {
+            \Log::warning('Login fallido para: ' . $request->login);
+            return back()
+                ->withInput($request->only('login', 'remember'))
+                ->withErrors([
+                    'login' => 'Las credenciales no coinciden con nuestros registros.',
+                ]);
+        }
+
+        // Iniciar sesión manualmente
+        Auth::login($usuario, $request->boolean('remember'));
         
-        // Si no funciona, probar bcrypt directo
-        if (!$passwordMatch) {
-            \Log::info('password_verify falló, probando comparación manual');
-            
-            // Generar nuevo hash con la contraseña proporcionada
-            $newHash = bcrypt($credentials['password']);
-            
-            // Si el hash en BD es muy viejo o diferente formato, actualizarlo
-            if (Hash::needsRehash($usuario->password_hash)) {
-                \Log::info('Hash necesita rehash, actualizando...');
-                $usuario->password_hash = $newHash;
-                $usuario->save();
-                $passwordMatch = true; // Al actualizarlo, damos por válido
-            } else {
-                // Comparar manualmente si son iguales (caso raro)
-                $passwordMatch = ($usuario->password_hash === $newHash);
-            }
-        }
-
-        // DEPURACIÓN - Resultado de verificación
-        \Log::info('Resultado verificación:', [
-            'password_match' => $passwordMatch,
-            'hash_actual' => $usuario->password_hash,
-            'password_provided' => $credentials['password']
-        ]);
-
-        if ($passwordMatch) {
-            // Iniciar sesión manualmente
-            Auth::login($usuario, $request->boolean('remember'));
-            
-            // Actualizar último login
-            $usuario->ultimo_login = now();
-            $usuario->save();
-            
-            // Regenerar sesión
-            $request->session()->regenerate();
-            
-            \Log::info('Login exitoso para usuario: ' . $usuario->email);
-            
-            // Redirigir al dashboard
-            return redirect()->intended(route('dashboard'))
-                ->with('success', '¡Bienvenido ' . $usuario->nombre . '!');
-        }
-
-        // Si falla la autenticación
-        \Log::warning('Login fallido para: ' . $credentials['email']);
-        return back()
-            ->withInput($request->only('email', 'remember'))
-            ->withErrors([
-                'email' => 'Las credenciales no coinciden con nuestros registros.',
-            ]);
+        // ✅ CORREGIDO: Actualizar último login
+        $usuario->ultimo_login = now();
+        $usuario->save();
+        
+        // Regenerar sesión
+        $request->session()->regenerate();
+        
+        \Log::info('Login exitoso para usuario: ' . $usuario->nombre);
+        
+        // Redirigir al dashboard
+        return redirect()->intended(route('dashboard'))
+            ->with('success', '¡Bienvenido ' . $usuario->nombre . '!');
     }
 
     /**
@@ -134,7 +104,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        \Log::info('Logout usuario: ' . Auth::user()->email);
+        if (Auth::check()) {
+            \Log::info('Logout usuario: ' . Auth::user()->nombre);
+        }
         
         Auth::logout();
         
