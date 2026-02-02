@@ -4,17 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClienteNss extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    protected $table = 'clientes_nss';
-    
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = null;
-    
+    protected $table = 'cliente_nsss';
+
     protected $fillable = [
         'cliente_id',
         'nss',
@@ -23,8 +19,11 @@ class ClienteNss extends Model
 
     protected $casts = [
         'es_principal' => 'boolean',
-        'creado_en' => 'datetime'
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
+
+    public $timestamps = true;
 
     public function cliente()
     {
