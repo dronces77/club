@@ -12,38 +12,44 @@ class Usuario extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     protected $table = 'usuarios';
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'id';  // ← ¡CORREGIDO! Usa 'id', no 'usuario_id'
     
-    // Nombre de las columnas de timestamps personalizadas
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = 'actualizado_en';
+    // ¡IMPORTANTE! Desactivar timestamps automáticos
+    public $timestamps = false;
     
-    // Laravel espera 'password', pero tú usas 'password_hash'
-    public function getAuthPassword()
-    {
-        return $this->password_hash;
-    }
-    
+    /**
+     * Los atributos que son asignables en masa.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'username',
-        'email', 
-        'password_hash',
         'nombre',
-        'apellidos',
+        'email',
+        'password',
         'rol',
-        'activo'
+        'estatus',
+        'ultimo_login',
+        'fecha_registro'
     ];
 
+    /**
+     * Los atributos que deben estar ocultos para la serialización.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
-        'password_hash',
+        'password',
         'remember_token',
     ];
 
+    /**
+     * Los atributos que deben ser convertidos.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'activo' => 'boolean',
         'ultimo_login' => 'datetime',
-        'creado_en' => 'datetime',
-        'actualizado_en' => 'datetime',
+        'fecha_registro' => 'datetime',
+        'password' => 'hashed',
     ];
 }
