@@ -27,7 +27,7 @@
 </div>
 @endif
 
-<form action="{{ route('clientes.update', $cliente) }}" method="POST">
+<form id="editarClienteForm" action="{{ route('clientes.update', $cliente) }}" method="POST">
     @csrf
     @method('PUT')
     
@@ -55,14 +55,14 @@
                 <div class="col-md-3 mb-3">
                     <label class="form-label"><strong>Fecha Captura:</strong></label>
                     <p class="form-control-plaintext">
-                        {{ $cliente->creado_en ? $cliente->creado_en->format('d/m/Y H:i') : 'N/A' }}
+                        {{ $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : 'N/A' }}
                     </p>
                 </div>
                 
                 <div class="col-md-3 mb-3">
                     <label class="form-label"><strong>Última actualización:</strong></label>
                     <p class="form-control-plaintext">
-                        {{ $cliente->actualizado_en ? $cliente->actualizado_en->format('d/m/Y H:i') : 'N/A' }}
+                        {{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
                     </p>
                 </div>
                 
@@ -209,7 +209,9 @@
                            name="curp" 
                            value="{{ old('curp', $curps[0] ?? '') }}" 
                            maxlength="18"
-                           required>
+                           required
+                           data-campo="curp">
+                    <div class="invalid-feedback" id="curp-error"></div>
                     @error('curp')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -224,7 +226,9 @@
                            id="curp2" 
                            name="curp2" 
                            value="{{ old('curp2', $curps[1] ?? '') }}" 
-                           maxlength="18">
+                           maxlength="18"
+                           data-campo="curp2">
+                    <div class="invalid-feedback" id="curp2-error"></div>
                     @error('curp2')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -239,7 +243,9 @@
                            id="curp3" 
                            name="curp3" 
                            value="{{ old('curp3', $curps[2] ?? '') }}" 
-                           maxlength="18">
+                           maxlength="18"
+                           data-campo="curp3">
+                    <div class="invalid-feedback" id="curp3-error"></div>
                     @error('curp3')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -257,7 +263,9 @@
                            name="rfc" 
                            value="{{ old('rfc', $rfcs[0] ?? '') }}" 
                            maxlength="13"
-                           required>
+                           required
+                           data-campo="rfc">
+                    <div class="invalid-feedback" id="rfc-error"></div>
                     @error('rfc')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -272,7 +280,9 @@
                            id="rfc2" 
                            name="rfc2" 
                            value="{{ old('rfc2', $rfcs[1] ?? '') }}" 
-                           maxlength="13">
+                           maxlength="13"
+                           data-campo="rfc2">
+                    <div class="invalid-feedback" id="rfc2-error"></div>
                     @error('rfc2')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -566,7 +576,9 @@
                            name="nss" 
                            value="{{ old('nss', $nss[0] ?? '') }}" 
                            maxlength="11"
-                           required>
+                           required
+                           data-campo="nss">
+                    <div class="invalid-feedback" id="nss-error"></div>
                     @error('nss')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -581,7 +593,9 @@
                            id="nss2" 
                            name="nss2" 
                            value="{{ old('nss2', $nss[1] ?? '') }}" 
-                           maxlength="11">
+                           maxlength="11"
+                           data-campo="nss2">
+                    <div class="invalid-feedback" id="nss2-error"></div>
                     @error('nss2')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -596,7 +610,9 @@
                            id="nss3" 
                            name="nss3" 
                            value="{{ old('nss3', $nss[2] ?? '') }}" 
-                           maxlength="11">
+                           maxlength="11"
+                           data-campo="nss3">
+                    <div class="invalid-feedback" id="nss3-error"></div>
                     @error('nss3')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -611,7 +627,9 @@
                            id="nss4" 
                            name="nss4" 
                            value="{{ old('nss4', $nss[3] ?? '') }}" 
-                           maxlength="11">
+                           maxlength="11"
+                           data-campo="nss4">
+                    <div class="invalid-feedback" id="nss4-error"></div>
                     @error('nss4')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -662,7 +680,7 @@
                             disabled>
                         <option value="">Seleccionar...</option>
                         @foreach($regimenes ?? [] as $regimen)
-                            @if($regimen->instituto_id == 2)
+                            @if($regimen->instituto_id == 14) <!-- ISSSTE id = 14 -->
                                 <option value="{{ $regimen->id }}" {{ old('regimen2_id', $cliente->regimen2_id) == $regimen->id ? 'selected' : '' }}>
                                     {{ $regimen->nombre }}
                                 </option>
@@ -961,9 +979,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let modalidadesData;
         
-        if (institutoId == 1) { // IMSS
+        if (institutoId == 13) { // IMSS id = 13
             modalidadesData = modalidadesImssData;
-        } else if (institutoId == 2) { // ISSSTE
+        } else if (institutoId == 14) { // ISSSTE id = 14
             modalidadesData = modalidadesIsssteData;
         } else {
             modalidadesData = [...modalidadesImssData, ...modalidadesIsssteData];
@@ -1089,8 +1107,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const valorSeleccionado = instituto2Select.value;
         const textoSeleccionado = instituto2Select.options[instituto2Select.selectedIndex].text;
         
-        // Verificar si el valor es 2 (ID de ISSSTE) o el texto es "ISSSTE"
-        return valorSeleccionado == 2 || textoSeleccionado === 'ISSSTE';
+        // Verificar si el valor es 14 (ID de ISSSTE según schema nuevo) o el texto es "ISSSTE"
+        return valorSeleccionado == 14 || textoSeleccionado === 'ISSSTE';
     }
     
     // Configurar estado inicial
@@ -1127,11 +1145,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let modalidadesFiltradas = [];
             
-            if (institutoId == 1) { // IMSS
+            if (institutoId == 13) { // IMSS id = 13
                 modalidadesFiltradas = todasModalidades.filter(m => 
                     ['NA', 'M10', 'M40'].includes(m.codigo)
                 );
-            } else if (institutoId == 2) { // ISSSTE
+            } else if (institutoId == 14) { // ISSSTE id = 14
                 modalidadesFiltradas = modalidadesIssste.filter(m => 
                     ['NA', 'CV'].includes(m.codigo)
                 );
@@ -1225,6 +1243,223 @@ document.addEventListener('DOMContentLoaded', function() {
         
         institutoSelect.addEventListener('change', actualizarRegimenes);
     }
+    
+    // ==================== VALIDACIÓN EN TIEMPO REAL ====================
+    // Obtener ID del cliente actual
+    const clienteId = {{ $cliente->id }};
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Función para validar un campo único
+    function validarCampoUnico(campo, valor) {
+        if (!valor) return Promise.resolve(true);
+        
+        return fetch('/api/validar-campo-unico', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                campo: campo,
+                valor: valor,
+                cliente_id: clienteId
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la validación');
+            }
+            return response.json();
+        })
+        .then(data => {
+            return {
+                disponible: data.disponible,
+                mensaje: data.mensaje
+            };
+        })
+        .catch(error => {
+            console.error('Error en validación:', error);
+            return { disponible: true, mensaje: '' };
+        });
+    }
+    
+    // Configurar validación para todos los campos CURP
+    const camposCurp = ['curp', 'curp2', 'curp3'];
+    camposCurp.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.addEventListener('blur', async function() {
+                const valor = this.value.trim().toUpperCase();
+                this.value = valor;
+                
+                if (valor) {
+                    const resultado = await validarCampoUnico(campoId, valor);
+                    if (!resultado.disponible) {
+                        alert(resultado.mensaje);
+                        this.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        this.focus();
+                    } else {
+                        this.classList.remove('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = '';
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    // Configurar validación para todos los campos RFC
+    const camposRfc = ['rfc', 'rfc2'];
+    camposRfc.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.addEventListener('blur', async function() {
+                const valor = this.value.trim().toUpperCase();
+                this.value = valor;
+                
+                if (valor) {
+                    const resultado = await validarCampoUnico(campoId, valor);
+                    if (!resultado.disponible) {
+                        alert(resultado.mensaje);
+                        this.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        this.focus();
+                    } else {
+                        this.classList.remove('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = '';
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    // Configurar validación para todos los campos NSS
+    const camposNss = ['nss', 'nss2', 'nss3', 'nss4'];
+    camposNss.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            campo.addEventListener('blur', async function() {
+                const valor = this.value.trim();
+                
+                if (valor) {
+                    const resultado = await validarCampoUnico(campoId, valor);
+                    if (!resultado.disponible) {
+                        alert(resultado.mensaje);
+                        this.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        this.focus();
+                    } else {
+                        this.classList.remove('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = '';
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    // Validación también en submit para evitar envío con datos duplicados
+    const form = document.getElementById('editarClienteForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            let tieneErrores = false;
+            const errores = [];
+            
+            // Validar campos CURP
+            for (const campoId of camposCurp) {
+                const campo = document.getElementById(campoId);
+                if (campo && campo.value.trim()) {
+                    const resultado = await validarCampoUnico(campoId, campo.value.trim().toUpperCase());
+                    if (!resultado.disponible) {
+                        tieneErrores = true;
+                        campo.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        errores.push(resultado.mensaje);
+                    }
+                }
+            }
+            
+            // Validar campos RFC
+            for (const campoId of camposRfc) {
+                const campo = document.getElementById(campoId);
+                if (campo && campo.value.trim()) {
+                    const resultado = await validarCampoUnico(campoId, campo.value.trim().toUpperCase());
+                    if (!resultado.disponible) {
+                        tieneErrores = true;
+                        campo.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        errores.push(resultado.mensaje);
+                    }
+                }
+            }
+            
+            // Validar campos NSS
+            for (const campoId of camposNss) {
+                const campo = document.getElementById(campoId);
+                if (campo && campo.value.trim()) {
+                    const resultado = await validarCampoUnico(campoId, campo.value.trim());
+                    if (!resultado.disponible) {
+                        tieneErrores = true;
+                        campo.classList.add('is-invalid');
+                        const errorElement = document.getElementById(`${campoId}-error`);
+                        if (errorElement) {
+                            errorElement.textContent = resultado.mensaje;
+                        }
+                        errores.push(resultado.mensaje);
+                    }
+                }
+            }
+            
+            if (tieneErrores) {
+                const mensajeErrores = errores.join('\n');
+                alert('❌ Error: Se encontraron los siguientes problemas:\n\n' + mensajeErrores + 
+                      '\n\nPor favor, corrige estos campos antes de continuar.');
+                return false;
+            }
+            
+            // Si no hay errores, mostrar confirmación
+            if (!confirm('¿Estás seguro de guardar los cambios?')) {
+                return false;
+            }
+            
+            // Si todo está bien, enviar el formulario
+            this.submit();
+        });
+    }
+    
+    // Función para convertir a mayúsculas automáticamente
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.id.includes('curp') || this.id.includes('rfc')) {
+                this.value = this.value.toUpperCase();
+            }
+        });
+    });
 });
 </script>
 
@@ -1242,6 +1477,14 @@ document.addEventListener('DOMContentLoaded', function() {
     .campos-issste-enabled {
         background-color: #fff;
         opacity: 1;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+    }
+    
+    .invalid-feedback {
+        display: block;
     }
 </style>
 @endpush
