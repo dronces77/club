@@ -218,11 +218,20 @@
                                 <i class="fas fa-tachometer-alt"></i> Dashboard
                             </a>
                         </li>
+                        
+                        {{-- MENÚ NUEVO: PROSPECTOS --}}
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}" href="{{ route('clientes.index') }}">
+                            <a class="nav-link {{ request()->routeIs('prospectos.*') ? 'active' : '' }}" href="{{ route('prospectos.index') }}">
+                                <i class="fas fa-user-friends"></i> Prospectos
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('clientes.*') && !request()->routeIs('prospectos.*') ? 'active' : '' }}" href="{{ route('clientes.index') }}">
                                 <i class="fas fa-users"></i> Clientes
                             </a>
                         </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="#">
                                 <i class="fas fa-file-alt"></i> Documentos
