@@ -95,11 +95,11 @@
                         </p>
                         <p class="mb-2">
                             <strong>Fecha Captura:</strong> 
-                            {{ $cliente->creado_en ? $cliente->creado_en->format('d/m/Y H:i') : 'N/A' }}
+                            {{ $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : 'N/A' }}
                         </p>
                         <p class="mb-0">
                             <strong>Última actualización:</strong> 
-                            {{ $cliente->actualizado_en ? $cliente->actualizado_en->format('d/m/Y H:i') : 'N/A' }}
+                            {{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
                         </p>
                     </div>
                 </div>
@@ -365,81 +365,81 @@
                 </div>
             </div>
             
-			<!-- Sección 2: Institución 2 (ISSSTE) -->
-			<div class="col-md-6 mb-4">
-				<div class="card h-100">
-					<div class="card-header">
-						<i class="fas fa-building me-2"></i> Institución 2
-					</div>
-					<div class="card-body">
-						@if($cliente->instituto2_id == 2)
-							<div class="row mb-3">
-								<div class="col-md-6">
-									<strong>Institución2:</strong><br>
-									@if($cliente->instituto2)
-										<span class="badge bg-info">{{ $cliente->instituto2->nombre }}</span>
-									@else
-										<span class="text-muted">No asignado</span>
-									@endif
-								</div>
-								<div class="col-md-6">
-									<strong>Régimen2:</strong><br>
-									@if($cliente->regimen2)
-										{{ $cliente->regimen2->nombre }}
-									@else
-										<span class="text-muted">No asignado</span>
-									@endif
-								</div>
-							</div>
-							
-							<div class="row mb-3">
-								<div class="col-md-6">
-									<strong>Trámite2:</strong><br>
-									@if($cliente->tramite2)
-										{{ $cliente->tramite2->nombre }}
-									@else
-										<span class="text-muted">No asignado</span>
-									@endif
-								</div>
-								<div class="col-md-6">
-									<strong>Modalidad2:</strong><br>
-									{{ $cliente->modalidad_issste == 'NA' ? 'No Aplica' : 
-									($cliente->modalidad_issste == 'CV' ? 'Continuación Voluntaria' : 
-									$cliente->modalidad_issste) }}
-								</div>
-							</div>
-							
-							<div class="row mb-3">
-								<div class="col-md-6">
-									<strong>Años de Servicio:</strong><br>
-									{{ $cliente->anios_servicio_issste ?? 'N/A' }}
-								</div>
-								<div class="col-md-6">
-									<strong>NSSIssste:</strong><br>
-									{{ $cliente->nss_issste ?? 'N/A' }}
-								</div>
-							</div>
-							
-							<div class="row">
-								<div class="col-md-6">
-									<strong>FechaAlta_ModIssste:</strong><br>
-									{{ $cliente->fecha_alta_issste ? $cliente->fecha_alta_issste->format('d/m/Y') : 'N/A' }}
-								</div>
-								<div class="col-md-6">
-									<strong>FechaBaja_ModIssste:</strong><br>
-									{{ $cliente->fecha_baja_issste ? $cliente->fecha_baja_issste->format('d/m/Y') : 'N/A' }}
-								</div>
-							</div>
-						@else
-							<div class="text-center py-4">
-								<i class="fas fa-times-circle fa-2x text-muted mb-3"></i>
-								<p class="text-muted">No se ha registrado Institución 2</p>
-								<small>Seleccione "N/A" en la edición si no tiene segunda institución</small>
-							</div>
-						@endif
-					</div>
-				</div>
-			</div>
+            <!-- Sección 2: Institución 2 (ISSSTE) -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fas fa-building me-2"></i> Institución 2
+                    </div>
+                    <div class="card-body">
+                        @if($cliente->instituto2_id == 14)
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Institución2:</strong><br>
+                                    @if($cliente->instituto2)
+                                        <span class="badge bg-info">{{ $cliente->instituto2->nombre }}</span>
+                                    @else
+                                        <span class="text-muted">No asignado</span>
+                                    @endif
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Régimen2:</strong><br>
+                                    @if($cliente->regimen2)
+                                        {{ $cliente->regimen2->nombre }}
+                                    @else
+                                        <span class="text-muted">No asignado</span>
+                                    @endif
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Trámite2:</strong><br>
+                                    @if($cliente->tramite2)
+                                        {{ $cliente->tramite2->nombre }}
+                                    @else
+                                        <span class="text-muted">No asignado</span>
+                                    @endif
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Modalidad2:</strong><br>
+                                    {{ $cliente->modalidad_issste == 'NA' ? 'No Aplica' : 
+                                    ($cliente->modalidad_issste == 'CV' ? 'Continuación Voluntaria' : 
+                                    $cliente->modalidad_issste) }}
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Años de Servicio:</strong><br>
+                                    {{ $cliente->anios_servicio_issste ?? 'N/A' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>NSSIssste:</strong><br>
+                                    {{ $cliente->nss_issste ?? 'N/A' }}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>FechaAlta_ModIssste:</strong><br>
+                                    {{ $cliente->fecha_alta_issste ? $cliente->fecha_alta_issste->format('d/m/Y') : 'N/A' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>FechaBaja_ModIssste:</strong><br>
+                                    {{ $cliente->fecha_baja_issste ? $cliente->fecha_baja_issste->format('d/m/Y') : 'N/A' }}
+                                </div>
+                            </div>
+                        @else
+                            <div class="text-center py-4">
+                                <i class="fas fa-times-circle fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No se ha registrado Institución 2</p>
+                                <small>Seleccione "N/A" en la edición si no tiene segunda institución</small>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -606,7 +606,7 @@
                         </p>
                         <p class="mb-2">
                             <strong>Fecha creación:</strong><br>
-                            {{ $cliente->creado_en ? $cliente->creado_en->format('d/m/Y H:i') : 'N/A' }}
+                            {{ $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : 'N/A' }}
                         </p>
                         <p class="mb-2">
                             <strong>Actualizado por:</strong><br>
@@ -622,7 +622,7 @@
                         </p>
                         <p class="mb-0">
                             <strong>Última actualización:</strong><br>
-                            {{ $cliente->actualizado_en ? $cliente->actualizado_en->format('d/m/Y H:i') : 'N/A' }}
+                            {{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
                         </p>
                     </div>
                 </div>
