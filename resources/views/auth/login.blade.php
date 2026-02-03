@@ -17,27 +17,27 @@
                 <div class="card-body p-5">
                     <h4 class="text-center mb-4">Iniciar Sesión</h4>
                     
-                    <form method="POST" action="{{ route('login.post') }}">
+                    <form method="POST" action="{{ route('login') }}">
                         @csrf
                         
                         <div class="mb-4">
-                            <label for="email" class="form-label fw-semibold">
-                                <i class="fas fa-envelope me-2"></i>Correo Electrónico
+                            <label for="login" class="form-label fw-semibold">
+                                <i class="fas fa-user me-2"></i>Usuario o Email
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light">
                                     <i class="fas fa-at text-muted"></i>
                                 </span>
-                                <input type="email" 
-                                       class="form-control @error('email') is-invalid @enderror" 
-                                       id="email" 
-                                       name="email" 
-                                       value="{{ old('email') }}" 
-                                       placeholder="usuario@ejemplo.com"
+                                <input type="text" 
+                                       class="form-control @error('login') is-invalid @enderror" 
+                                       id="login" 
+                                       name="login" 
+                                       value="{{ old('login') }}" 
+                                       placeholder="Email o nombre de usuario"
                                        required 
                                        autofocus>
                             </div>
-                            @error('email')
+                            @error('login')
                                 <div class="invalid-feedback d-block">
                                     <i class="fas fa-exclamation-circle me-1"></i> {{ $message }}
                                 </div>
@@ -71,7 +71,7 @@
                         
                         <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                                <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                                 <label class="form-check-label" for="remember">
                                     Recordar mis datos
                                 </label>
@@ -94,7 +94,10 @@
                         <div class="alert alert-info py-2">
                             <div class="row">
                                 <div class="col-12 mb-1">
-                                    <small><i class="fas fa-user me-1"></i> <strong>Usuario:</strong> dronces@hotmail.com</small>
+                                    <small><i class="fas fa-envelope me-1"></i> <strong>Email:</strong> dronces@hotmail.com</small>
+                                </div>
+                                <div class="col-12 mb-1">
+                                    <small><i class="fas fa-user me-1"></i> <strong>Usuario:</strong> Administrador</small>
                                 </div>
                                 <div class="col-12">
                                     <small><i class="fas fa-key me-1"></i> <strong>Contraseña:</strong> admin123</small>
@@ -140,10 +143,10 @@
             });
         }
         
-        // Auto-focus en campo de email
-        const emailInput = document.getElementById('email');
-        if (emailInput) {
-            emailInput.focus();
+        // Auto-focus en campo de login
+        const loginInput = document.getElementById('login');
+        if (loginInput) {
+            loginInput.focus();
         }
     });
 </script>
