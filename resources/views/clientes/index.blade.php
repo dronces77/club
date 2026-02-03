@@ -3,130 +3,295 @@
 @section('title', 'Clientes - ClubPension')
 
 @section('content')
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">
-        <i class="fas fa-users me-2"></i>Clientes
-    </h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ route('clientes.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i> Nuevo Cliente
-        </a>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-users me-2"></i>Clientes
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{{ route('clientes.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Nuevo Cliente
+                </a>
+                <a href="{{ route('prospectos.index') }}" class="btn btn-outline-info">
+                    <i class="fas fa-user-friends me-1"></i> Ver Prospectos
+                </a>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- Filtros y Búsqueda -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" action="{{ route('clientes.index') }}" id="searchForm" class="row g-3">
-            <!-- Campo de búsqueda principal con autocomplete -->
-            <div class="col-md-6 position-relative">
-                <label for="search" class="form-label">Buscar Cliente</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="search" name="search" 
-                           value="{{ request('search') }}" 
-                           placeholder="Nombre, NSS, CURP, RFC, No. Cliente..."
-                           autocomplete="off"
-                           aria-describedby="clearSearch">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch" title="Limpiar búsqueda">
-                        <i class="fas fa-times"></i>
-                    </button>
+    <!-- 📊 ESTADÍSTICAS RÁPIDAS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Total Clientes</h6>
+                            <h2 class="mb-0">{{ $totalClientes }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
                 </div>
-                <!-- Contenedor para resultados del autocomplete -->
-                <div id="searchResults" class="position-absolute w-100 bg-white border rounded shadow-sm mt-1" style="display: none; z-index: 1000; max-height: 400px; overflow-y: auto;"></div>
             </div>
-
-            <!-- Filtro de Estatus -->
-            <div class="col-md-3">
-                <label for="estatus" class="form-label">Estatus</label>
-                <select class="form-select" id="estatus" name="estatus">
-                    <option value="">Todos</option>
-                    <option value="Activo" {{ request('estatus') == 'Activo' ? 'selected' : '' }}>Activo</option>
-                    <option value="pendiente" {{ request('estatus') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                    <option value="Suspendido" {{ request('estatus') == 'Suspendido' ? 'selected' : '' }}>Suspendido</option>
-                    <option value="Terminado" {{ request('estatus') == 'Terminado' ? 'selected' : '' }}>Terminado</option>
-                    <option value="Baja" {{ request('estatus') == 'Baja' ? 'selected' : '' }}>Baja</option>
-                </select>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Activos</h6>
+                            <h2 class="mb-0">{{ $activosCount }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
             </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">IMSS</h6>
+                            <h2 class="mb-0">{{ $imssCount }}</h2>
+                        </div>
+                        <i class="fas fa-hospital fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Pendientes</h6>
+                            <h2 class="mb-0">{{ $pendientesCount }}</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <!-- Filtro de Institución (IMSS/ISSSTE) -->
-            <div class="col-md-3">
-                <label for="instituto_id" class="form-label">Institución</label>
-                <select class="form-select" id="instituto_id" name="instituto_id">
-                    <option value="">Todas</option>
-                    @foreach($institutos as $instituto)
-                        <option value="{{ $instituto->id }}" {{ request('instituto_id') == $instituto->id ? 'selected' : '' }}>
-                            {{ $instituto->codigo }} - {{ $instituto->nombre }}
+    <!-- 🔍 FILTROS DE BÚSQUEDA -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h6 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+            </h6>
+        </div>
+        <div class="card-body">
+            <form id="searchForm" method="GET" action="{{ route('clientes.index') }}" class="row g-3">
+                <!-- 🔍 BÚSQUEDA POR TEXTO (AUTOCOMPLETE) -->
+                <div class="col-md-4 position-relative">
+                    <label for="searchInput" class="form-label">
+                        <i class="fas fa-search me-1"></i>Buscar cliente
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="searchInput"
+                               name="search"
+                               placeholder="No. Cliente, Nombre, Apellidos, CURP o NSS"
+                               value="{{ request('search') }}"
+                               autocomplete="off">
+                        @if(request('search'))
+                            <button type="button" 
+                                    class="btn btn-outline-secondary" 
+                                    id="clearSearch"
+                                    title="Limpiar búsqueda">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        @endif
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                        Busca por: No. Cliente, Nombre, Apellido Paterno, Apellido Materno, CURP o NSS
+                    </small>
+                    
+                    <!-- 🔍 RESULTADOS DE AUTOCOMPLETE -->
+                    <div id="searchResults" 
+                         class="position-absolute bg-white border rounded shadow mt-1" 
+                         style="display: none; z-index: 1050; width: 100%; max-width: 500px; max-height: 400px; overflow-y: auto;">
+                        <!-- Los resultados de autocomplete se cargarán aquí -->
+                    </div>
+                </div>
+                
+                <!-- 📊 FILTRO POR ESTATUS -->
+                <div class="col-md-3">
+                    <label for="estatusFilter" class="form-label">
+                        <i class="fas fa-flag me-1"></i>Estatus
+                    </label>
+                    <select class="form-select" 
+                            id="estatusFilter"
+                            name="estatus">
+                        <option value="todos" {{ request('estatus') == 'todos' || !request('estatus') ? 'selected' : '' }}>
+                            Todos los estatus
                         </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <!-- Botones de acción -->
-            <div class="col-md-12 d-flex justify-content-end mt-3">
-                <div class="btn-group" role="group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-1"></i> Buscar
-                    </button>
-                    <a href="{{ route('clientes.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-undo me-1"></i> Limpiar
-                    </a>
+                        <option value="Activo" {{ request('estatus') == 'Activo' ? 'selected' : '' }}>Activo</option>
+                        <option value="Suspendido" {{ request('estatus') == 'Suspendido' ? 'selected' : '' }}>Suspendido</option>
+                        <option value="Terminado" {{ request('estatus') == 'Terminado' ? 'selected' : '' }}>Terminado</option>
+                        <option value="Baja" {{ request('estatus') == 'Baja' ? 'selected' : '' }}>Baja</option>
+                    </select>
+                </div>
+                
+                <!-- 🏢 FILTRO POR INSTITUCIÓN -->
+                <div class="col-md-3">
+                    <label for="institutoFilter" class="form-label">
+                        <i class="fas fa-building me-1"></i>Institución
+                    </label>
+                    <select class="form-select" 
+                            id="institutoFilter"
+                            name="instituto_id">
+                        <option value="todos" {{ request('instituto_id') == 'todos' || !request('instituto_id') ? 'selected' : '' }}>
+                            Todas las instituciones
+                        </option>
+                        @foreach($institutos as $instituto)
+                            <option value="{{ $instituto->id }}" 
+                                {{ request('instituto_id') == $instituto->id ? 'selected' : '' }}>
+                                {{ $instituto->nombre }} ({{ $instituto->codigo }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- 🔘 BOTONES DE ACCIÓN -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="d-grid gap-2 w-100">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                        <a href="{{ route('clientes.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-1"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 📊 RESUMEN DE FILTROS ACTIVOS -->
+        @if(request('search') || (request('estatus') && request('estatus') != 'todos') || (request('instituto_id') && request('instituto_id') != 'todos'))
+        <div class="card-footer bg-light">
+            <div class="d-flex align-items-center">
+                <small class="me-3">
+                    <i class="fas fa-filter me-1"></i> Filtros aplicados:
+                </small>
+                <div class="d-flex gap-2">
+                    @if(request('search'))
+                    <span class="badge bg-info">
+                        <i class="fas fa-search me-1"></i> Texto: "{{ request('search') }}"
+                    </span>
+                    @endif
+                    @if(request('estatus') && request('estatus') != 'todos')
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-flag me-1"></i> Estatus: {{ request('estatus') }}
+                    </span>
+                    @endif
+                    @if(request('instituto_id') && request('instituto_id') != 'todos')
+                    @php
+                        $institutoSeleccionado = $institutos->firstWhere('id', request('instituto_id'));
+                    @endphp
+                    @if($institutoSeleccionado)
+                    <span class="badge bg-success">
+                        <i class="fas fa-building me-1"></i> Institución: {{ $institutoSeleccionado->codigo }}
+                    </span>
+                    @endif
+                    @endif
                 </div>
             </div>
-        </form>
+        </div>
+        @endif
     </div>
-</div>
 
-<!-- Lista de Clientes -->
-<div class="card">
-    <div class="card-body">
-        @if($clientes->count() > 0)
+    <!-- 📋 TABLA DE CLIENTES -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i> Lista de Clientes
+                <span class="badge bg-secondary ms-2">{{ $clientes->total() }} registros</span>
+            </h5>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i> Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('clientes.exportar') }}">
+                            <i class="fas fa-file-csv me-2"></i> CSV
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            @if(session('warning'))
+                <div class="alert alert-warning alert-dismissible fade show">
+                    <i class="fas fa-exclamation-triangle me-2"></i> {{ session('warning') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
                         <tr>
                             <th>No. Cliente</th>
-                            <th>Nombre Completo</th>
+                            <th>Nombre</th>
+                            <th>Apellido Paterno</th>
+                            <th>Apellido Materno</th>
                             <th>CURP</th>
                             <th>NSS</th>
                             <th>Institución</th>
                             <th>Estatus</th>
-                            <th>Fecha Alta</th>
+                            <th>Fecha Registro</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($clientes as $cliente)
+                        @forelse($clientes as $cliente)
                         <tr>
                             <td>
-                                <span class="badge bg-light text-dark">{{ $cliente->no_cliente ?? 'N/A' }}</span>
+                                <strong>{{ $cliente->no_cliente ?? 'N/A' }}</strong>
                             </td>
+                            <td>{{ $cliente->nombre }}</td>
+                            <td>{{ $cliente->apellido_paterno ?? '-' }}</td>
+                            <td>{{ $cliente->apellido_materno ?? '-' }}</td>
                             <td>
-                                <strong>{{ $cliente->nombre }} {{ $cliente->apellido_paterno }} {{ $cliente->apellido_materno }}</strong>
-                            </td>
-                            <td>
-                                @if($cliente->curps && $cliente->curps->count() > 0)
+                                @if($cliente->curps->count() > 0)
                                     @php
                                         $curpPrincipal = $cliente->curps->where('es_principal', true)->first();
                                     @endphp
-                                    @if($curpPrincipal)
-                                        <span class="text-monospace">{{ $curpPrincipal->curp }}</span>
-                                    @else
-                                        <span class="text-muted">N/A</span>
-                                    @endif
+                                    <span class="badge bg-info text-dark">{{ $curpPrincipal->curp ?? $cliente->curps->first()->curp }}</span>
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
                             <td>
-                                @if($cliente->nss && $cliente->nss->count() > 0)
+                                @if($cliente->nss->count() > 0)
                                     @php
                                         $nssPrincipal = $cliente->nss->where('es_principal', true)->first();
                                     @endphp
-                                    @if($nssPrincipal)
-                                        <span class="text-monospace">{{ $nssPrincipal->nss }}</span>
-                                    @else
-                                        <span class="text-muted">N/A</span>
-                                    @endif
+                                    <span class="badge bg-secondary">{{ $nssPrincipal->nss ?? $cliente->nss->first()->nss }}</span>
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
@@ -134,56 +299,54 @@
                             <td>
                                 <div class="d-flex flex-column">
                                     @if($cliente->instituto)
-                                        <span class="badge bg-primary mb-1">
-                                            {{ $cliente->instituto->codigo }}
-                                        </span>
+                                        <span class="badge bg-primary">{{ $cliente->instituto->codigo }}</span>
                                     @endif
                                     @if($cliente->instituto2)
-                                        <span class="badge bg-warning">
-                                            {{ $cliente->instituto2->codigo }}
-                                        </span>
-                                    @endif
-                                    @if(!$cliente->instituto && !$cliente->instituto2)
-                                        <span class="text-muted">No asignado</span>
+                                        <span class="badge bg-warning text-dark mt-1">{{ $cliente->instituto2->codigo }}</span>
                                     @endif
                                 </div>
                             </td>
                             <td>
                                 @php
-                                    $badgeClass = 'badge bg-secondary';
-                                    if($cliente->estatus == 'Activo') $badgeClass = 'badge bg-success';
-                                    elseif($cliente->estatus == 'pendiente') $badgeClass = 'badge bg-warning';
-                                    elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge bg-danger';
-                                    elseif($cliente->estatus == 'Terminado') $badgeClass = 'badge bg-info';
-                                    elseif($cliente->estatus == 'Baja') $badgeClass = 'badge bg-dark';
+                                    $estatusClass = 'bg-secondary';
+                                    if ($cliente->estatus === 'Activo') $estatusClass = 'bg-success';
+                                    elseif ($cliente->estatus === 'Suspendido') $estatusClass = 'bg-warning text-dark';
+                                    elseif ($cliente->estatus === 'Baja') $estatusClass = 'bg-danger';
+                                    elseif ($cliente->estatus === 'Terminado') $estatusClass = 'bg-dark';
                                 @endphp
-                                <span class="{{ $badgeClass }}">
-                                    {{ $cliente->estatus }}
-                                </span>
+                                <span class="badge {{ $estatusClass }}">{{ $cliente->estatus ?? 'N/A' }}</span>
                             </td>
                             <td>
-                                {{ $cliente->fecha_alta ? \Carbon\Carbon::parse($cliente->fecha_alta)->format('d/m/Y') : 'N/A' }}
+                                {{ $cliente->fecha_creacion_formateada }}
+                                <br>
+                                <small class="text-muted">{{ $cliente->created_at->diffForHumans() }}</small>
                             </td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('clientes.show', $cliente) }}" 
-                                       class="btn btn-sm btn-outline-info" 
-                                       title="Ver">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ route('clientes.show', $cliente->id) }}" 
+                                       class="btn btn-outline-info" 
+                                       title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('clientes.edit', $cliente) }}" 
-                                       class="btn btn-sm btn-outline-primary" 
-                                       title="Editar">
+                                    <a href="{{ route('clientes.edit', $cliente->id) }}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Editar"
+                                       @if($cliente->tipo_cliente !== 'C') disabled @endif>
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('clientes.destroy', $cliente) }}" 
+                                    <a href="{{ route('clientes.cambiar-estatus', $cliente->id) }}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Cambiar estatus">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
+                                    <form action="{{ route('clientes.destroy', $cliente->id) }}" 
                                           method="POST" 
                                           class="d-inline"
                                           onsubmit="return confirm('¿Estás seguro de eliminar este cliente?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" 
-                                                class="btn btn-sm btn-outline-danger" 
+                                                class="btn btn-outline-danger" 
                                                 title="Eliminar">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -191,444 +354,334 @@
                                 </div>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="10" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-users fa-3x mb-3"></i>
+                                    <h5>No hay clientes registrados</h5>
+                                    <p class="mb-3">Los clientes aparecerán aquí después de convertir prospectos.</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{{ route('prospectos.index') }}" class="btn btn-primary">
+                                            <i class="fas fa-user-friends me-1"></i> Ver Prospectos
+                                        </a>
+                                        <a href="{{ route('clientes.create') }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-plus me-1"></i> Crear Nuevo
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Paginación -->
+
+            <!-- 📄 PAGINACIÓN -->
+            @if($clientes->hasPages())
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div class="text-muted">
-                    Mostrando {{ $clientes->firstItem() }} - {{ $clientes->lastItem() }} de {{ $clientes->total() }} clientes
+                    Mostrando {{ $clientes->firstItem() ?? 0 }} - {{ $clientes->lastItem() ?? 0 }} de {{ $clientes->total() }} clientes
                 </div>
-                <div>
-                    {{ $clientes->links() }}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        {{-- Paginación personalizada manteniendo filtros --}}
+                        @if($clientes->onFirstPage())
+                            <li class="page-item disabled">
+                                <span class="page-link">« Anterior</span>
+                            </li>
+                        @else
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $clientes->previousPageUrl() }}" rel="prev">« Anterior</a>
+                            </li>
+                        @endif
+
+                        @foreach($clientes->getUrlRange(max(1, $clientes->currentPage() - 2), min($clientes->lastPage(), $clientes->currentPage() + 2)) as $page => $url)
+                            @if($page == $clientes->currentPage())
+                                <li class="page-item active">
+                                    <span class="page-link">{{ $page }}</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                </li>
+                            @endif
+                        @endforeach
+
+                        @if($clientes->hasMorePages())
+                            <li class="page-item">
+                                <a class="page-link" href="{{ $clientes->nextPageUrl() }}" rel="next">Siguiente »</a>
+                            </li>
+                        @else
+                            <li class="page-item disabled">
+                                <span class="page-link">Siguiente »</span>
+                            </li>
+                        @endif
+                    </ul>
+                </nav>
+            </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- 📊 INFORMACIÓN ADICIONAL -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i> Información
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>Vista de Clientes:</strong> Esta página muestra <strong>solo registros con tipo "Cliente"</strong>.
+                    </p>
+                    <p>
+                        Para ver prospectos, imposibles, bajas y suspendidos, visita la vista de <strong>Prospectos</strong>.
+                    </p>
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Tip:</strong> Los registros nuevos se crean como Prospectos y luego se convierten a Clientes.
+                    </div>
                 </div>
             </div>
-        @else
-            <div class="text-center py-5">
-                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h5>No hay clientes registrados</h5>
-                <p class="text-muted">
-                    @if(request()->hasAny(['search', 'estatus', 'instituto_id', 'tipo_cliente']))
-                        No se encontraron clientes con los filtros aplicados
-                    @else
-                        Comienza agregando tu primer cliente
-                    @endif
-                </p>
-                <a href="{{ route('clientes.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-1"></i> Agregar Cliente
-                </a>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-search me-2"></i> Ayuda de Búsqueda
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p>Puedes buscar por:</p>
+                    <ul class="mb-0">
+                        <li><strong>No. Cliente:</strong> CP-24010001</li>
+                        <li><strong>Nombre:</strong> Juan, María, etc.</li>
+                        <li><strong>Apellidos:</strong> Pérez, García, etc.</li>
+                        <li><strong>CURP:</strong> GOFV681210HCHRRL00</li>
+                        <li><strong>NSS:</strong> 12345678901</li>
+                    </ul>
+                </div>
             </div>
-        @endif
+        </div>
     </div>
 </div>
+@endsection
 
-<!-- Estadísticas rápidas -->
-<div class="row mt-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Total</h5>
-                <h2 class="mb-0">{{ $totalClientes }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Activos</h5>
-                <h2 class="mb-0">{{ $activosCount }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Pendientes</h5>
-                <h2 class="mb-0">{{ $pendientesCount }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Con IMSS</h5>
-                <h2 class="mb-0">{{ $imssCount }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Scripts para búsqueda en tiempo real -->
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('search');
-    const searchResults = document.getElementById('searchResults');
-    const clearSearchBtn = document.getElementById('clearSearch');
+    // Elementos del DOM
+    const searchInput = document.getElementById('searchInput');
+    const estatusFilter = document.getElementById('estatusFilter');
+    const institutoFilter = document.getElementById('institutoFilter');
     const searchForm = document.getElementById('searchForm');
-    let searchTimeout = null;
-    let currentSearchTerm = '';
+    const resultadosContainer = document.getElementById('searchResults');
     
-// ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
-// ========== FUNCIÓN PRINCIPAL DE AUTOCOMPLETE ==========
-function performAutoComplete(searchTerm) {
-    if (searchTerm.length < 2) {
-        hideSearchResults();
-        return;
+    // Variables de control
+    let searchTimeout;
+    
+    // 🔍 FUNCIÓN PARA BUSCAR CLIENTES (AUTOCOMPLETE)
+    function buscarClientesAutocomplete() {
+        const searchTerm = searchInput.value.trim();
+        const estatus = estatusFilter.value;
+        const institutoId = institutoFilter.value;
+        
+        // Solo buscar si hay al menos 2 caracteres
+        if (searchTerm.length >= 2) {
+            // Mostrar loading
+            resultadosContainer.innerHTML = `
+                <div class="text-center p-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Buscando...</span>
+                    </div>
+                    <span class="ms-2">Buscando clientes...</span>
+                </div>
+            `;
+            resultadosContainer.style.display = 'block';
+            
+            // Hacer petición AJAX con TODOS los filtros
+            fetch('/clientes/search?' + new URLSearchParams({
+                q: searchTerm,
+                estatus: estatus,
+                instituto_id: institutoId
+            }), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    mostrarResultadosAutocomplete(data.clientes);
+                } else {
+                    mostrarErrorAutocomplete('Error en la búsqueda');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarErrorAutocomplete('Error al conectar con el servidor');
+            });
+        } else {
+            // Ocultar resultados si hay menos de 2 caracteres
+            resultadosContainer.style.display = 'none';
+        }
     }
     
-    if (searchTerm === currentSearchTerm) {
-        return;
-    }
-    
-    currentSearchTerm = searchTerm;
-    
-    // Obtener valores actuales de los filtros
-    const estatus = document.getElementById('estatus').value;
-    const institutoId = document.getElementById('instituto_id').value;
-    
-    // Mostrar loading
-    searchResults.innerHTML = `
-        <div class="p-3 text-center">
-            <div class="spinner-border spinner-border-sm text-primary"></div>
-            <span class="ms-2">Buscando clientes...</span>
-        </div>
-    `;
-    searchResults.style.display = 'block';
-    
-    // URL CORREGIDA
-    const searchUrl = `/clientes/search?q=${encodeURIComponent(searchTerm)}&estatus=${estatus}&instituto_id=${institutoId}`;
-    
-    console.log('🔍 URL de búsqueda:', searchUrl);
-    
-    // Petición AJAX con timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-    
-    fetch(searchUrl, { signal: controller.signal })
-        .then(response => {
-            clearTimeout(timeoutId);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('✅ Datos recibidos:', data);
-            if (data.success && data.clientes && data.clientes.length > 0) {
-                renderSearchResults(data.clientes);
-            } else {
-                showNoResults();
-            }
-        })
-        .catch(error => {
-            clearTimeout(timeoutId);
-            console.error('❌ Error en búsqueda:', error);
-            if (error.name === 'AbortError') {
-                showError('Tiempo de espera agotado');
-            } else {
-                showError('Error en la conexión');
-            }
-        });
-}
-    
-    // ========== FUNCIÓN PARA RENDERIZAR RESULTADOS ==========
-    function renderSearchResults(clientes) {
-        let resultsHtml = '<div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">';
+    // 📋 FUNCIÓN PARA MOSTRAR RESULTADOS AUTOCOMPLETE
+    function mostrarResultadosAutocomplete(clientes) {
+        if (clientes.length === 0) {
+            resultadosContainer.innerHTML = `
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-search me-2"></i>
+                    No se encontraron clientes
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
         
         clientes.forEach(cliente => {
-            let badges = [];
-            let infoItems = [];
+            // Información a mostrar en cada resultado
+            const infoLines = [];
             
-            // Badges de institución
-            if (cliente.institucion) {
-                badges.push(`<span class="badge bg-primary me-1">${cliente.institucion}</span>`);
-            }
-            if (cliente.institucion2) {
-                badges.push(`<span class="badge bg-warning me-1">${cliente.institucion2}</span>`);
+            if (cliente.no_cliente && cliente.no_cliente !== 'N/A') {
+                infoLines.push(`<div><strong>No. Cliente:</strong> ${cliente.no_cliente}</div>`);
             }
             
-            // Información adicional
-            if (cliente.curp_principal) {
-                infoItems.push(`<div><small class="text-muted">CURP:</small> <span class="fw-bold">${cliente.curp_principal}</span></div>`);
-            }
-            if (cliente.rfc_principal) {
-                infoItems.push(`<div><small class="text-muted">RFC:</small> <span class="fw-bold">${cliente.rfc_principal}</span></div>`);
-            }
-            if (cliente.nss_principal) {
-                infoItems.push(`<div><small class="text-muted">NSS:</small> <span class="fw-bold">${cliente.nss_principal}</span></div>`);
+            if (cliente.curp) {
+                infoLines.push(`<div><strong>CURP:</strong> ${cliente.curp}</div>`);
             }
             
-            resultsHtml += `
-                <a href="${cliente.show_url}" class="list-group-item list-group-item-action search-result-item" data-id="${cliente.id}">
+            if (cliente.nss) {
+                infoLines.push(`<div><strong>NSS:</strong> ${cliente.nss}</div>`);
+            }
+            
+            // Color del badge según estatus
+            let badgeClass = 'bg-secondary';
+            if (cliente.estatus === 'Activo') badgeClass = 'bg-success';
+            else if (cliente.estatus === 'Suspendido') badgeClass = 'bg-warning text-dark';
+            else if (cliente.estatus === 'Baja') badgeClass = 'bg-danger';
+            
+            html += `
+                <a href="${cliente.show_url}" class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1 text-primary">${cliente.nombre_completo}</h6>
-                            <div class="mb-1">
-                                <small class="text-muted">No. Cliente:</small>
-                                <span class="fw-bold ms-1">${cliente.no_cliente || 'N/A'}</span>
+                        <div class="flex-grow-1 me-3">
+                            <h6 class="mb-1">${cliente.nombre_completo}</h6>
+                            <div class="small text-muted">
+                                ${infoLines.join('')}
                             </div>
-                            ${infoItems.join('')}
                         </div>
-                        <div class="text-end">
-                            ${badges.join('')}
-                            <div class="mt-1">
-                                <span class="badge ${getStatusBadgeClass(cliente.estatus)}">${cliente.estatus}</span>
-                            </div>
+                        <div>
+                            <span class="badge ${badgeClass}">${cliente.estatus}</span>
                         </div>
                     </div>
                 </a>
             `;
         });
         
-        resultsHtml += '</div>';
+        html += '</div>';
         
-		// Agregar opción para buscar con los filtros actuales
-		const estatusVal = document.getElementById('estatus').value;
-		const institutoIdVal = document.getElementById('instituto_id').value;
-
-        // Agregar opción para buscar con los filtros actuales
-		resultsHtml += `
-			<div class="border-top p-2 bg-light">
-				<a href="{{ route('clientes.index') }}?search=${encodeURIComponent(currentSearchTerm)}&estatus=${estatusVal}&instituto_id=${institutoIdVal}" 
-				class="btn btn-sm btn-primary w-100">
-				<i class="fas fa-search me-1"></i> Ver todos los resultados (${clientes.length})
-				</a>
-			</div>
-		`;
-        
-        searchResults.innerHTML = resultsHtml;
-        searchResults.style.display = 'block';
-    }
-    
-    // ========== FUNCIONES AUXILIARES ==========
-    function showNoResults() {
-        searchResults.innerHTML = `
-            <div class="p-3 text-center text-muted">
-                <i class="fas fa-search fa-lg mb-2"></i>
-                <p class="mb-0">No se encontraron clientes</p>
-                <small>Intenta con otros términos de búsqueda</small>
+        // Agregar contador de resultados
+        html += `
+            <div class="p-2 border-top text-center bg-light">
+                <small class="text-muted">${clientes.length} cliente(s) encontrado(s)</small>
             </div>
         `;
-        searchResults.style.display = 'block';
-    }
-    
-function showError(message = 'Error en la búsqueda') {
-    searchResults.innerHTML = `
-        <div class="p-3 text-center text-danger">
-            <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
-            <p class="mb-0">${message}</p>
-            <small>Intenta nuevamente</small>
-        </div>
-    `;
-    searchResults.style.display = 'block';
-}
-    
-    function hideSearchResults() {
-        searchResults.style.display = 'none';
-        currentSearchTerm = '';
-    }
-    
-    function getStatusBadgeClass(status) {
-        const classes = {
-            'Activo': 'bg-success',
-            'pendiente': 'bg-warning',
-            'Suspendido': 'bg-danger',
-            'Terminado': 'bg-info',
-            'Baja': 'bg-dark'
-        };
-        return classes[status] || 'bg-secondary';
-    }
-    
-    // ========== EVENT LISTENERS ==========
-    // Evento principal para el autocomplete (con debounce)
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.trim();
         
+        resultadosContainer.innerHTML = html;
+    }
+    
+    // ❌ FUNCIÓN PARA MOSTRAR ERROR EN AUTOCOMPLETE
+    function mostrarErrorAutocomplete(mensaje) {
+        resultadosContainer.innerHTML = `
+            <div class="alert alert-danger m-2" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                ${mensaje}
+            </div>
+        `;
+    }
+    
+    // ⏰ EVENTOS DE BÚSQUEDA CON DEBOUNCE (300ms)
+    searchInput.addEventListener('input', function() {
         // Limpiar timeout anterior
         clearTimeout(searchTimeout);
         
-        // Si el campo está vacío, ocultar resultados
-        if (searchTerm === '') {
-            hideSearchResults();
-            return;
-        }
-        
-        // Si tiene al menos 2 caracteres, iniciar búsqueda con debounce
-        if (searchTerm.length >= 2) {
-            searchTimeout = setTimeout(() => {
-                performAutoComplete(searchTerm);
-            }, 300); // Debounce de 300ms
-        } else {
-            hideSearchResults();
+        // Establecer nuevo timeout (debounce)
+        searchTimeout = setTimeout(() => {
+            buscarClientesAutocomplete();
+        }, 300);
+    });
+    
+    // 🔄 ACTUALIZAR AUTOCOMPLETE AL CAMBIAR FILTROS
+    estatusFilter.addEventListener('change', function() {
+        if (searchInput.value.trim().length >= 2) {
+            buscarClientesAutocomplete();
         }
     });
     
-    // Limpiar búsqueda
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        hideSearchResults();
-        searchForm.submit();
+    institutoFilter.addEventListener('change', function() {
+        if (searchInput.value.trim().length >= 2) {
+            buscarClientesAutocomplete();
+        }
     });
     
-    // Cerrar resultados al hacer clic fuera
+    // 👁️ OCULTAR RESULTADOS AL HACER CLIC FUERA
     document.addEventListener('click', function(event) {
-        if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
-            hideSearchResults();
+        if (!searchForm.contains(event.target)) {
+            resultadosContainer.style.display = 'none';
         }
     });
     
-    // Navegación con teclado en resultados
-    searchInput.addEventListener('keydown', function(event) {
-        if (!searchResults.style.display || searchResults.style.display === 'none') {
-            return;
+    // 🔍 ENFOQUE EN CAMPO DE BÚSQUEDA
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2 && resultadosContainer.children.length > 0) {
+            resultadosContainer.style.display = 'block';
         }
-        
-        const results = searchResults.querySelectorAll('.search-result-item');
-        let activeIndex = -1;
-        
-        // Encontrar elemento activo actual
-        results.forEach((result, index) => {
-            if (result.classList.contains('active')) {
-                activeIndex = index;
-            }
+    });
+    
+    // 📱 LIMPIAR BÚSQUEDA Y FILTROS
+    const clearSearchBtn = document.getElementById('clearSearch');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            resultadosContainer.style.display = 'none';
         });
-        
-        // Manejar teclas de navegación
-        switch(event.key) {
-            case 'ArrowDown':
-                event.preventDefault();
-                if (results.length === 0) return;
-                
-                if (activeIndex < results.length - 1) {
-                    if (activeIndex >= 0) {
-                        results[activeIndex].classList.remove('active');
-                    }
-                    activeIndex++;
-                    results[activeIndex].classList.add('active');
-                    results[activeIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                }
-                break;
-                
-            case 'ArrowUp':
-                event.preventDefault();
-                if (results.length === 0) return;
-                
-                if (activeIndex > 0) {
-                    if (activeIndex >= 0) {
-                        results[activeIndex].classList.remove('active');
-                    }
-                    activeIndex--;
-                    results[activeIndex].classList.add('active');
-                    results[activeIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                }
-                break;
-                
-            case 'Enter':
-                event.preventDefault();
-                if (activeIndex >= 0 && results[activeIndex]) {
-                    window.location.href = results[activeIndex].getAttribute('href');
-                } else if (searchInput.value.trim().length > 0) {
-                    // Si no hay elemento activo pero hay texto, enviar formulario
-                    searchForm.submit();
-                }
-                break;
-                
-            case 'Escape':
-                hideSearchResults();
-                break;
-        }
-    });
-    
-    // Hover en resultados
-    searchResults.addEventListener('mouseover', function(event) {
-        const item = event.target.closest('.search-result-item');
-        if (item) {
-            // Remover active de todos los items
-            searchResults.querySelectorAll('.search-result-item').forEach(el => {
-                el.classList.remove('active');
-            });
-            // Agregar active al item hover
-            item.classList.add('active');
-        }
-    });
-    
-    // ========== FUNCIONALIDAD ADICIONAL ==========
-    // Filtros automáticos (sin botón de buscar)
-    document.getElementById('estatus').addEventListener('change', function() {
-        searchForm.submit();
-    });
-    
-    document.getElementById('instituto_id').addEventListener('change', function() {
-        searchForm.submit();
-    });
-    
-    //document.getElementById('tipo_cliente').addEventListener('change', function() {
-    //    searchForm.submit();
-    //});
-    
-    // Precargar resultados si hay un término de búsqueda al cargar la página
-    if (searchInput.value.trim().length >= 2) {
-        setTimeout(() => {
-            performAutoComplete(searchInput.value.trim());
-        }, 500);
     }
+    
+    // 🔘 ENVIAR FORMULARIO AL PRESIONAR ENTER
+    searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchForm.submit();
+        }
+    });
+    
+    // 📊 MOSTRAR/OCULTAR INFORMACIÓN DE FILTROS
+    const filterBadges = document.querySelectorAll('.badge');
+    filterBadges.forEach(badge => {
+        badge.addEventListener('click', function() {
+            const filterType = this.getAttribute('data-filter-type');
+            const filterValue = this.getAttribute('data-filter-value');
+            
+            if (filterType === 'estatus') {
+                estatusFilter.value = filterValue;
+            } else if (filterType === 'instituto') {
+                institutoFilter.value = filterValue;
+            }
+            
+            searchForm.submit();
+        });
+    });
 });
 </script>
-
-<style>
-/* Estilos adicionales para mejorar el autocomplete */
-#searchResults {
-    z-index: 1050;
-    margin-top: 2px;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.175);
-}
-
-.search-result-item {
-    transition: all 0.2s ease;
-    border-left: none;
-    border-right: none;
-}
-
-.search-result-item:hover, .search-result-item.active {
-    background-color: #f8f9fa;
-    border-left: 3px solid #0d6efd !important;
-}
-
-.search-result-item:first-child {
-    border-top: none;
-}
-
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
-/* Estilo para el campo de búsqueda cuando hay resultados */
-#search:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-/* Scroll personalizado para resultados */
-#searchResults::-webkit-scrollbar {
-    width: 6px;
-}
-
-#searchResults::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-#searchResults::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
-}
-
-#searchResults::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-</style>
 @endpush
-@endsection
