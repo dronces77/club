@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<!-- Select2 -->
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     
     <style>
         :root {
@@ -252,7 +255,7 @@
                     <hr class="my-3" style="border-color: rgba(255,255,255,0.1);">
                     
                     <div class="px-3 py-2">
-                        <small class="text-muted">ROL ACTUAL</small>
+                        <small>ROL ACTUAL</small>
                         <div class="mt-1">
                             <span class="badge bg-info">
                                 {{ auth()->user()->rol ?? 'Usuario' }}
@@ -298,6 +301,9 @@
     
     <!-- jQuery (opcional, para algunas funcionalidades) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<!-- Select2 -->
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     
     <script>
         // Toggle sidebar en móviles
@@ -331,6 +337,17 @@
             });
         }, 5000);
     </script>
+
+<script>
+    $(document).ready(function () {
+        $('.select2').select2({
+            placeholder: 'Escribe para buscar...',
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
+
     
     @stack('scripts')
 </body>
