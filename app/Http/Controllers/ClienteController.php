@@ -496,12 +496,20 @@ class ClienteController extends Controller
         // ========== VALIDACIONES ==========
         $rules = Cliente::$rulesUpdate;
         
-        // ✅ Validaciones únicas para todos los campos
-        $this->agregarValidacionesUnicas($rules, $request, $cliente);
+        // ✅ Validaciones COMPLETAS para todos los campos
+        $this->agregarValidacionesCompletas($rules, $request, $cliente);
         
         $validated = $request->validate($rules);
         
         try {
+            // 🔍 LOGGING: Inicio de actualización
+            Log::info('Actualizando cliente', [
+                'cliente_id' => $cliente->id,
+                'usuario_id' => auth()->id(),
+                'datos' => $request->except(['_token', '_method']),
+                'timestamp' => now()
+            ]);
+            
             DB::beginTransaction();
             
             $validated['actualizado_por'] = auth()->id();
@@ -537,6 +545,13 @@ class ClienteController extends Controller
             $this->manejarContactosCorregido($cliente, $request);
             
             DB::commit();
+            
+            // 🔍 LOGGING: Actualización exitosa
+            Log::info('Cliente actualizado exitosamente', [
+                'cliente_id' => $cliente->id,
+                'cambios' => $cliente->getChanges(),
+                'timestamp' => now()
+            ]);
             
             return redirect()->route('clientes.show', $cliente)
                 ->with('success', 'Cliente actualizado exitosamente.');
@@ -736,65 +751,245 @@ class ClienteController extends Controller
     }
 
     /**
-     * Agregar validaciones únicas para todos los campos
+     * Agregar validaciones COMPLETAS para todos los campos
+     * Incluye: unicidad en BD y no repetición entre campos del mismo tipo
      */
-    private function agregarValidacionesUnicas(&$rules, Request $request, Cliente $cliente)
+    private function agregarValidacionesCompletas(&$rules, Request $request, Cliente $cliente)
     {
-        // Campos principales (obligatorios)
-        $camposPrincipales = [
-            'curp' => ['ClienteCurp', 'curp'],
-            'rfc' => ['ClienteRfc', 'rfc'],
-            'nss' => ['ClienteNss', 'nss']
+        // ========== VALIDACIONES CURP ==========
+        $curps = [
+            'curp' => $request->curp,
+            'curp2' => $request->curp2,
+            'curp3' => $request->curp3
         ];
         
-        // Campos secundarios (opcionales)
-        $camposSecundarios = [
-            'curp2' => ['ClienteCurp', 'curp'],
-            'curp3' => ['ClienteCurp', 'curp'],
-            'rfc2' => ['ClienteRfc', 'rfc'],
-            'nss2' => ['ClienteNss', 'nss'],
-            'nss3' => ['ClienteNss', 'nss'],
-            'nss4' => ['ClienteNss', 'nss']
+        // CURP principal es obligatoria
+        $rules['curp'] = [
+            'required',
+            'max:18',
+            function ($attribute, $value, $fail) use ($curps, $cliente) {
+                // 1. Validar que no se repita en otros clientes
+                $existeEnBD = ClienteCurp::where('curp', $value)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
+                
+                if ($existeEnBD) {
+                    $fail("La CURP '{$value}' ya está registrada para otro cliente.");
+                }
+                
+                // 2. Validar que no sea igual a CURP2 o CURP3
+                foreach ($curps as $campo => $valor) {
+                    if ($campo !== 'curp' && !empty($valor) && $valor === $value) {
+                        $fail("La CURP principal no puede ser igual a {$campo}.");
+                    }
+                }
+            }
         ];
         
-        // Validar campos principales
-        foreach ($camposPrincipales as $campo => [$modelo, $columna]) {
-            if ($request->filled($campo)) {
-                $rules[$campo] = [
-                    'required',
-                    'max:' . ($campo === 'curp' ? 18 : ($campo === 'rfc' ? 13 : 11)),
-                    function ($attribute, $value, $fail) use ($modelo, $columna, $cliente, $campo) {
-                        $clase = "App\\Models\\{$modelo}";
-                        $existe = $clase::where($columna, $value)
-                            ->where('cliente_id', '!=', $cliente->id)
-                            ->exists();
-                        
-                        if ($existe) {
-                            $fail("El {$campo} '{$value}' ya está registrado para otro cliente.");
+        // Validar CURP2
+        if ($request->filled('curp2')) {
+            $rules['curp2'] = [
+                'nullable',
+                'max:18',
+                function ($attribute, $value, $fail) use ($curps, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteCurp::where('curp', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("La CURP2 '{$value}' ya está registrada para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a CURP o CURP3
+                    foreach ($curps as $campo => $valor) {
+                        if ($campo !== 'curp2' && !empty($valor) && $valor === $value) {
+                            $fail("La CURP2 no puede ser igual a {$campo}.");
                         }
                     }
-                ];
-            }
+                }
+            ];
         }
         
-        // Validar campos secundarios (si se proporcionan)
-        foreach ($camposSecundarios as $campo => [$modelo, $columna]) {
-            if ($request->filled($campo)) {
-                $rules[$campo] = [
-                    'nullable',
-                    'max:' . (strpos($campo, 'curp') !== false ? 18 : (strpos($campo, 'rfc') !== false ? 13 : 11)),
-                    function ($attribute, $value, $fail) use ($modelo, $columna, $cliente, $campo) {
-                        $clase = "App\\Models\\{$modelo}";
-                        $existe = $clase::where($columna, $value)
-                            ->where('cliente_id', '!=', $cliente->id)
-                            ->exists();
-                        
-                        if ($existe) {
-                            $fail("El {$campo} '{$value}' ya está registrado para otro cliente.");
+        // Validar CURP3
+        if ($request->filled('curp3')) {
+            $rules['curp3'] = [
+                'nullable',
+                'max:18',
+                function ($attribute, $value, $fail) use ($curps, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteCurp::where('curp', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("La CURP3 '{$value}' ya está registrada para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a CURP o CURP2
+                    foreach ($curps as $campo => $valor) {
+                        if ($campo !== 'curp3' && !empty($valor) && $valor === $value) {
+                            $fail("La CURP3 no puede ser igual a {$campo}.");
                         }
                     }
-                ];
+                }
+            ];
+        }
+        
+        // ========== VALIDACIONES RFC ==========
+        $rfcs = [
+            'rfc' => $request->rfc,
+            'rfc2' => $request->rfc2
+        ];
+        
+        // RFC principal es obligatorio
+        $rules['rfc'] = [
+            'required',
+            'max:13',
+            function ($attribute, $value, $fail) use ($rfcs, $cliente) {
+                // 1. Validar que no se repita en otros clientes
+                $existeEnBD = ClienteRfc::where('rfc', $value)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
+                
+                if ($existeEnBD) {
+                    $fail("El RFC '{$value}' ya está registrado para otro cliente.");
+                }
+                
+                // 2. Validar que no sea igual a RFC2
+                if (!empty($rfcs['rfc2']) && $rfcs['rfc2'] === $value) {
+                    $fail("El RFC principal no puede ser igual a RFC2.");
+                }
             }
+        ];
+        
+        // Validar RFC2
+        if ($request->filled('rfc2')) {
+            $rules['rfc2'] = [
+                'nullable',
+                'max:13',
+                function ($attribute, $value, $fail) use ($rfcs, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteRfc::where('rfc', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("El RFC2 '{$value}' ya está registrado para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a RFC principal
+                    if (!empty($rfcs['rfc']) && $rfcs['rfc'] === $value) {
+                        $fail("El RFC2 no puede ser igual al RFC principal.");
+                    }
+                }
+            ];
+        }
+        
+        // ========== VALIDACIONES NSS ==========
+        $nssArray = [
+            'nss' => $request->nss,
+            'nss2' => $request->nss2,
+            'nss3' => $request->nss3,
+            'nss4' => $request->nss4
+        ];
+        
+        // NSS principal es obligatorio
+        $rules['nss'] = [
+            'required',
+            'max:11',
+            function ($attribute, $value, $fail) use ($nssArray, $cliente) {
+                // 1. Validar que no se repita en otros clientes
+                $existeEnBD = ClienteNss::where('nss', $value)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
+                
+                if ($existeEnBD) {
+                    $fail("El NSS '{$value}' ya está registrado para otro cliente.");
+                }
+                
+                // 2. Validar que no sea igual a NSS2, NSS3 o NSS4
+                foreach ($nssArray as $campo => $valor) {
+                    if ($campo !== 'nss' && !empty($valor) && $valor === $value) {
+                        $fail("El NSS principal no puede ser igual a {$campo}.");
+                    }
+                }
+            }
+        ];
+        
+        // Validar NSS2
+        if ($request->filled('nss2')) {
+            $rules['nss2'] = [
+                'nullable',
+                'max:11',
+                function ($attribute, $value, $fail) use ($nssArray, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteNss::where('nss', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("El NSS2 '{$value}' ya está registrado para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a otros NSS
+                    foreach ($nssArray as $campo => $valor) {
+                        if ($campo !== 'nss2' && !empty($valor) && $valor === $value) {
+                            $fail("El NSS2 no puede ser igual a {$campo}.");
+                        }
+                    }
+                }
+            ];
+        }
+        
+        // Validar NSS3
+        if ($request->filled('nss3')) {
+            $rules['nss3'] = [
+                'nullable',
+                'max:11',
+                function ($attribute, $value, $fail) use ($nssArray, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteNss::where('nss', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("El NSS3 '{$value}' ya está registrado para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a otros NSS
+                    foreach ($nssArray as $campo => $valor) {
+                        if ($campo !== 'nss3' && !empty($valor) && $valor === $value) {
+                            $fail("El NSS3 no puede ser igual a {$campo}.");
+                        }
+                    }
+                }
+            ];
+        }
+        
+        // Validar NSS4
+        if ($request->filled('nss4')) {
+            $rules['nss4'] = [
+                'nullable',
+                'max:11',
+                function ($attribute, $value, $fail) use ($nssArray, $cliente) {
+                    // 1. Validar que no se repita en otros clientes
+                    $existeEnBD = ClienteNss::where('nss', $value)
+                        ->where('cliente_id', '!=', $cliente->id)
+                        ->exists();
+                    
+                    if ($existeEnBD) {
+                        $fail("El NSS4 '{$value}' ya está registrado para otro cliente.");
+                    }
+                    
+                    // 2. Validar que no sea igual a otros NSS
+                    foreach ($nssArray as $campo => $valor) {
+                        if ($campo !== 'nss4' && !empty($valor) && $valor === $value) {
+                            $fail("El NSS4 no puede ser igual a {$campo}.");
+                        }
+                    }
+                }
+            ];
         }
     }
 
@@ -874,6 +1069,16 @@ class ClienteController extends Controller
         if (!empty($curpsEliminar)) {
             ClienteCurp::whereIn('id', $curpsEliminar)->delete();
         }
+        
+        // Log de la operación
+        Log::info('CURPs actualizadas para cliente', [
+            'cliente_id' => $cliente->id,
+            'curps_mantenidos' => $curpsMantener,
+            'curps_eliminados' => $curpsEliminar,
+            'curp_principal' => $request->curp,
+            'curp2' => $request->curp2,
+            'curp3' => $request->curp3
+        ]);
     }
 
     /**
@@ -932,6 +1137,15 @@ class ClienteController extends Controller
         if (!empty($rfcsEliminar)) {
             ClienteRfc::whereIn('id', $rfcsEliminar)->delete();
         }
+        
+        // Log de la operación
+        Log::info('RFCs actualizadas para cliente', [
+            'cliente_id' => $cliente->id,
+            'rfcs_mantenidos' => $rfcsMantener,
+            'rfcs_eliminados' => $rfcsEliminar,
+            'rfc_principal' => $request->rfc,
+            'rfc2' => $request->rfc2
+        ]);
     }
 
     /**
@@ -1030,6 +1244,17 @@ class ClienteController extends Controller
         if (!empty($nssEliminar)) {
             ClienteNss::whereIn('id', $nssEliminar)->delete();
         }
+        
+        // Log de la operación
+        Log::info('NSS actualizados para cliente', [
+            'cliente_id' => $cliente->id,
+            'nss_mantenidos' => $nssMantener,
+            'nss_eliminados' => $nssEliminar,
+            'nss_principal' => $request->nss,
+            'nss2' => $request->nss2,
+            'nss3' => $request->nss3,
+            'nss4' => $request->nss4
+        ]);
     }
 
     /**
@@ -1059,6 +1284,12 @@ class ClienteController extends Controller
                 ]);
             }
         }
+        
+        // Log de la operación
+        Log::info('Contactos actualizados para cliente', [
+            'cliente_id' => $cliente->id,
+            'contactos_creados' => array_filter($tiposContacto)
+        ]);
     }
 
     /**
@@ -1072,8 +1303,12 @@ class ClienteController extends Controller
             return 'RFC';
         } elseif (strpos($errorMessage, 'cliente_nsss') !== false) {
             return 'NSS';
+        } elseif (strpos($errorMessage, 'cliente_contactos') !== false) {
+            return 'Contacto';
         } else {
-            return 'campo';
+            // Intentar extraer el valor duplicado del mensaje de error
+            preg_match("/Duplicate entry '(.+?)' for key/", $errorMessage, $matches);
+            return $matches[1] ?? 'campo desconocido';
         }
     }
 }
