@@ -29,6 +29,7 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
 // ====================
 // RUTAS PROTEGIDAS (requieren autenticación)
 // ====================
@@ -56,11 +57,25 @@ Route::middleware(['auth'])->group(function () {
     // ====================
     // PROSPECTOS - NUEVAS RUTAS
     // ====================
-    Route::prefix('prospectos')->name('prospectos.')->group(function () {
-        Route::get('/', [ProspectoController::class, 'index'])->name('index');
-        Route::put('/{id}/tipo', [ProspectoController::class, 'actualizarTipo'])->name('actualizar-tipo');
-        Route::get('/estadisticas', [ProspectoController::class, 'estadisticas'])->name('estadisticas');
-    });
+	Route::prefix('prospectos')->name('prospectos.')->group(function () {
+	
+		// Listado
+		Route::get('/', [ProspectoController::class, 'index'])->name('index');
+	
+		// Crear prospecto
+		Route::get('/create', [ProspectoController::class, 'create'])->name('create');
+		Route::post('/', [ProspectoController::class, 'store'])->name('store');
+	
+		// Convertir a cliente
+		Route::post('/{id}/convertir', [ProspectoController::class, 'convertir'])->name('convertir');
+	
+		// Otras acciones existentes
+		Route::put('/{id}/tipo', [ProspectoController::class, 'actualizarTipo'])->name('actualizar-tipo');
+		Route::get('/estadisticas', [ProspectoController::class, 'estadisticas'])->name('estadisticas');
+	
+	});
+
+
     
     // Perfil de usuario
     Route::get('/perfil', [DashboardController::class, 'perfil'])->name('perfil');
