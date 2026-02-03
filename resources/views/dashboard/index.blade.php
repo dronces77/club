@@ -192,7 +192,7 @@
                                 </span>
                             </td>
                             <td>
-                                {{ $cliente->creado_en ? \Carbon\Carbon::parse($cliente->creado_en)->format('d/m/Y') : 'N/A' }}
+                                {{ $cliente->created_at ? \Carbon\Carbon::parse($cliente->created_at)->format('d/m/Y') : 'N/A' }}
                             </td>
                             <td>
                                 <a href="{{ route('clientes.show', $cliente) }}" class="btn btn-sm btn-outline-info">
