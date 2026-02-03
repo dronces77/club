@@ -1,106 +1,66 @@
-$results = Get-ChildItem -Path "C:\xampp\htdocs\medicalsoft" -Recurse -File | 
-Select-String -Pattern "avatar-dr\.png"
+<?php
 
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
+namespace App\Http\Controllers;
+
+use App\Models\Prospecto;
+use App\Models\Cliente;
+use Illuminate\Http\Request;
+
+class ProspectoController extends Controller
+{
+    /**
+     * Listado de prospectos
+     */
+    public function index(Request $request)
+    {
+        $filtro = $request->get('filtro', 'no_convertidos');
+
+        if ($filtro === 'convertidos') {
+            $prospectos = Prospecto::where('convertido', 1)
+                ->orderBy('fecha_creacion', 'desc')
+                ->get();
+        } else {
+            $prospectos = Prospecto::where('convertido', 0)
+                ->orderBy('fecha_creacion', 'desc')
+                ->get();
+        }
+
+        return view('prospectos.index', compact('prospectos', 'filtro'));
     }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
-}
 
-http://localhost/
+    /**
+     * Formulario crear prospecto
+     */
+    public function create()
+    {
+        $clientes = Cliente::orderBy('nombre')->get();
 
-favicon.ico
-<strong>CI4</strong>
-
-
-$results = Get-ChildItem -Path "C:\xampp\htdocs\medicalsoft" -Recurse -File | 
-Select-String -Pattern "Clientes por Institución"
-
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
+        return view('prospectos.create', compact('clientes'));
     }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
-}
 
+    /**
+     * Guardar prospecto
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre'            => 'required|string|max:100',
+            'apellido_paterno'  => 'required|string|max:100',
+            'apellido_materno'  => 'required|string|max:100',
+            'curp'              => 'required|string|size:18',
+            'celular'           => 'required|string|max:20',
+            'origen'            => 'required|string',
+            'cliente_origen_id' => 'nullable|exists:clientes,id',
+        ]);
 
-$results = Get-ChildItem -Path "C:\xampp\htdocs\medicalsoft" -Recurse -File | 
-Select-String -Pattern "logohospital"
+        if ($validated['origen'] === 'N/A') {
+            $validated['cliente_origen_id'] = null;
+        }
 
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
+        Prospecto::create($validated);
+
+        return redirect()
+            ->route('prospectos.index')
+            ->with('success', 'Prospecto creado correctamente');
     }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
-}
-
-
-EL ARCHIVO VENDOR
-$results = Get-ChildItem -Path "C:\xampp\htdocs\pos" -Recurse -File | 
-Select-String -Pattern "$_SESSION["categorias"] = "on";"
-
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
-    }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
-}
-
-
-
-
-$results = Get-ChildItem -Path "C:\xampp\htdocs\jcpos" -Recurse -File -Include *.php | 
-Select-String -Pattern '\$_SESSION\["categorias"\] = "off";'
-
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
-    }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
-}
-
-
-
-
-
-
-
-
-
-
-
-
-$results = Get-ChildItem -Path "C:\xampp\htdocs\clubpension" -Recurse -File | 
-Select-String -Pattern "Clientes por Institución"
-
-if ($results) {
-    $results | ForEach-Object {
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "Archivo: $($_.Path)" -ForegroundColor Yellow
-        Write-Host "Línea: $($_.LineNumber)" -ForegroundColor Green
-        Write-Host "Contenido: $($_.Line)" -ForegroundColor White
-    }
-} else {
-    Write-Host "No se encontró la cadena en ningún archivo." -ForegroundColor Red
 }
