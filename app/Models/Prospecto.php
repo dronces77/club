@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class Prospecto extends Model
 {
     protected $table = 'prospectos';
-
     public $timestamps = false;
 
     protected $fillable = [
@@ -15,51 +14,23 @@ class Prospecto extends Model
         'apellido_paterno',
         'apellido_materno',
         'curp',
+        'nss',
         'celular',
-        'origen',
-        'cliente_origen_id',
+        'notas',
+        'estatus_prospecto_id',
         'convertido',
         'cliente_id',
+        'no_cliente',
         'fecha_creacion'
     ];
 
-    protected $casts = [
-        'convertido' => 'boolean',
-    ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relaciones
-    |--------------------------------------------------------------------------
-    */
-
-    // Cliente del cual proviene (referido)
-    public function clienteOrigen()
+    public function estatus()
     {
-        return $this->belongsTo(Cliente::class, 'cliente_origen_id');
+        return $this->belongsTo(CatalogoEstatusProspecto::class, 'estatus_prospecto_id');
     }
 
-    // Cliente creado a partir del prospecto
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class, 'cliente_id');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes (filtros reutilizables)
-    |--------------------------------------------------------------------------
-    */
-
-    // Prospectos aún NO convertidos
-    public function scopeNoConvertidos($query)
-    {
-        return $query->where('convertido', 0);
-    }
-
-    // Prospectos ya convertidos
-    public function scopeConvertidos($query)
-    {
-        return $query->where('convertido', 1);
+        return $this->belongsTo(Cliente::class);
     }
 }
