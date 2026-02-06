@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Prospecto;
-use App\Models\Cliente;
 use App\Models\ClienteCurp;
 use App\Models\ClienteNss;
+use App\Models\ClienteContacto;
+use App\Models\Prospecto;
+use App\Models\Cliente;
 use App\Models\CatalogoEstatusProspecto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +21,15 @@ class ProspectoController extends Controller
             ->orderBy('orden')
             ->get();
 
-        $prospectos = Prospecto::with('estatus')
-            ->when($estatusSeleccionado, function ($q) use ($estatusSeleccionado) {
-                $q->where('estatus_prospecto_id', $estatusSeleccionado);
-            })
+        $query = Prospecto::with('estatus');
+
+        if ($estatusSeleccionado) {
+            $query->where('estatus_prospecto_id', $estatusSeleccionado);
+        }
+
+        $prospectos = $query
             ->orderBy('fecha_creacion', 'desc')
-            ->get();
+            ->paginate(15);
 
         return view('prospectos.index', compact(
             'prospectos',
@@ -47,7 +51,7 @@ class ProspectoController extends Controller
             'apellido_materno' => 'nullable|string|max:100',
             'curp'             => 'required|string|size:18|unique:prospectos,curp',
             'nss'              => 'nullable|string|size:11|unique:prospectos,nss',
-            'celular'          => 'required|string|max:20',
+            'celular'          => 'required|string|max:13',
             'notas'            => 'nullable|string|max:250',
         ]);
 
@@ -59,7 +63,7 @@ class ProspectoController extends Controller
             'nss'                  => $request->nss,
             'celular'              => $request->celular,
             'notas'                => $request->notas,
-            'estatus_prospecto_id' => 1, // Nuevo
+            'estatus_prospecto_id' => 1,
             'convertido'           => 0,
             'fecha_creacion'       => now(),
         ]);
@@ -85,71 +89,79 @@ class ProspectoController extends Controller
         return back()->with('success', 'Estatus actualizado');
     }
 
-    public function convertir(Prospecto $prospecto)
+    /**
+     * 🔥 CONVERSIÓN A CLIENTE (nivel banco)
+     */
+    public function convertir($id)
     {
-        if ($prospecto->convertido) {
-            return back()->withErrors('Este prospecto ya fue convertido');
-        }
+        DB::beginTransaction();
 
-        DB::transaction(function () use ($prospecto) {
+        try {
+            $prospecto = Prospecto::lockForUpdate()->findOrFail($id);
 
-            /** ===============================
-             *  Generar número de cliente
-             *  =============================== */
-            $ultimo = Cliente::whereNotNull('no_cliente')
-                ->orderBy('id', 'desc')
+            if ($prospecto->convertido) {
+                throw new \Exception('Este prospecto ya fue convertido.');
+            }
+
+            $ultimo = Cliente::where('no_cliente', 'LIKE', 'CP-%')
+                ->orderByRaw("CAST(SUBSTRING(no_cliente, 4) AS UNSIGNED) DESC")
+                ->lockForUpdate()
                 ->first();
 
-            $numero = $ultimo
-                ? ((int) substr($ultimo->no_cliente, 3)) + 1
+            $siguienteNumero = $ultimo
+                ? ((int) str_replace('CP-', '', $ultimo->no_cliente)) + 1
                 : 1;
 
-            $noCliente = 'CP-' . str_pad($numero, 4, '0', STR_PAD_LEFT);
+            $noCliente = 'CP-' . $siguienteNumero;
 
-            /** ===============================
-             *  Crear cliente
-             *  =============================== */
             $cliente = Cliente::create([
-                'no_cliente'       => $noCliente,
-                'tipo_cliente'     => 'C',
-                'nombre'           => $prospecto->nombre,
-                'apellido_paterno' => $prospecto->apellido_paterno,
-                'apellido_materno' => $prospecto->apellido_materno,
-                'celular'          => $prospecto->celular,
-                'notas'            => $prospecto->notas,
+                'no_cliente'   => $noCliente,
+                'nombre'       => $prospecto->nombre,
+                'apellido_paterno'   => $prospecto->apellido_paterno,
+                'apellido_materno'   => $prospecto->apellido_materno,
+                'tipo_cliente' => 'C',
+                'estatus'      => 'activo',
+                'creado_por'   => auth()->id(),
             ]);
 
-            /** ===============================
-             *  CURP principal
-             *  =============================== */
-            ClienteCurp::create([
-                'cliente_id'   => $cliente->id,
-                'curp'         => $prospecto->curp,
-                'es_principal' => 1,
-            ]);
+            if (!empty($prospecto->curp)) {
+                ClienteCurp::create([
+                    'cliente_id' => $cliente->id,
+                    'curp'       => $prospecto->curp,
+                ]);
+            }
 
-            /** ===============================
-             *  NSS principal (si existe)
-             *  =============================== */
-            if ($prospecto->nss) {
+            if (!empty($prospecto->nss)) {
                 ClienteNss::create([
+                    'cliente_id' => $cliente->id,
+                    'nss'        => $prospecto->nss,
+                ]);
+            }
+
+            // 🔹 CONTACTO (FIX REAL)
+            if (!empty($prospecto->celular)) {
+                ClienteContacto::create([
                     'cliente_id'   => $cliente->id,
-                    'nss'          => $prospecto->nss,
+                    'tipo'         => 'celular',
+                    'valor'        => $prospecto->celular,
                     'es_principal' => 1,
                 ]);
             }
 
-            /** ===============================
-             *  Actualizar prospecto
-             *  =============================== */
             $prospecto->update([
-                'convertido'           => 1,
-                'cliente_id'           => $cliente->id,
-                'estatus_prospecto_id' => CatalogoEstatusProspecto::where('nombre', 'Convertido')->value('id'),
+                'convertido' => 1,
+                'cliente_id' => $cliente->id,
             ]);
-        });
 
-        return redirect()->route('clientes.index')
-            ->with('success', 'Prospecto convertido en cliente');
+            DB::commit();
+
+            return redirect()
+                ->route('clientes.show', $cliente->id)
+                ->with('success', "Prospecto convertido correctamente a cliente {$noCliente}");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 }
