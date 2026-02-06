@@ -84,7 +84,8 @@
                     <div class="col-md-6">
                         <p class="mb-2">
                             <strong>Fecha de Nacimiento:</strong> 
-                            {{ $cliente->fecha_nacimiento ? $cliente->fecha_nacimiento->format('d/m/Y') : 'N/A' }}
+                            <!--{{ $cliente->fecha_nacimiento ? $cliente->fecha_nacimiento->format('d/m/Y') : 'N/A' }} -->
+							{{ $cliente->fecha_nacimiento ? \Carbon\Carbon::parse($cliente->fecha_nacimiento)->format('d/m/Y') : 'N/A' }}
                             @if($cliente->edad)
                                 <small class="text-muted">({{ $cliente->edad }} años)</small>
                             @endif
