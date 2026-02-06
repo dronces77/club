@@ -395,8 +395,8 @@ class ClienteController extends Controller
             'regimen2',
             'tramite2',
             'referidor',
-            'creadoPor',
-            'actualizadoPor',
+            'creado_por',
+            'actualizado_por',
             'curps' => function($query) {
                 $query->orderBy('es_principal', 'desc');
             },
