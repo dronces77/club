@@ -124,17 +124,21 @@ class ProspectoController extends Controller
                 'creado_por'   => auth()->id(),
             ]);
 
+            // CURP PRINCIPAL
             if (!empty($prospecto->curp)) {
                 ClienteCurp::create([
-                    'cliente_id' => $cliente->id,
-                    'curp'       => $prospecto->curp,
+                    'cliente_id'   => $cliente->id,
+                    'curp'         => $prospecto->curp,
+                    'es_principal' => 1,
                 ]);
             }
 
+            // NSS PRINCIPAL
             if (!empty($prospecto->nss)) {
                 ClienteNss::create([
-                    'cliente_id' => $cliente->id,
-                    'nss'        => $prospecto->nss,
+                    'cliente_id'   => $cliente->id,
+                    'nss'          => $prospecto->nss,
+                    'es_principal' => 1,
                 ]);
             }
 
