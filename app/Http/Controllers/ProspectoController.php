@@ -13,30 +13,56 @@ use Illuminate\Support\Facades\DB;
 
 class ProspectoController extends Controller
 {
-    public function index(Request $request)
-    {
-        $estatusSeleccionado = $request->get('estatus');
+public function index(Request $request)
+{
+    $estatusSeleccionado = $request->get('estatus');
 
-        $estatus = CatalogoEstatusProspecto::where('activo', 1)
-            ->orderBy('orden')
-            ->get();
+    $sort = $request->get('sort', 'fecha_creacion'); // columna por defecto
+    $direction = $request->get('direction', 'desc'); // dirección por defecto
 
-        $query = Prospecto::with('estatus');
+    // Validar columnas permitidas
+    $allowedSorts = ['nombre', 'curp', 'nss', 'celular', 'fecha_creacion'];
+    if (!in_array($sort, $allowedSorts)) $sort = 'fecha_creacion';
+    if (!in_array($direction, ['asc','desc'])) $direction = 'desc';
 
-        if ($estatusSeleccionado) {
-            $query->where('estatus_prospecto_id', $estatusSeleccionado);
+    $estatus = CatalogoEstatusProspecto::where('activo', 1)
+        ->orderBy('orden')
+        ->get();
+
+    $query = Prospecto::with('estatus');
+
+    // **Filtro por estatus**
+    if ($estatusSeleccionado) {
+        $estatusObj = CatalogoEstatusProspecto::find($estatusSeleccionado);
+        if ($estatusObj) {
+            if ($estatusObj->nombre === 'Convertido') {
+                $query->where('convertido', 1);
+            } else {
+                $query->where('estatus_prospecto_id', $estatusObj->id)
+                      ->where('convertido', 0);
+            }
         }
-
-        $prospectos = $query
-            ->orderBy('fecha_creacion', 'desc')
-            ->paginate(15);
-
-        return view('prospectos.index', compact(
-            'prospectos',
-            'estatus',
-            'estatusSeleccionado'
-        ));
+    } else {
+        // Por defecto: mostrar todos los prospectos que NO estén convertidos
+        $query->where('convertido', 0);
     }
+
+    $prospectos = $query
+        ->orderBy($sort, $direction)
+        ->paginate(15)
+        ->appends($request->except('page'));
+
+    return view('prospectos.index', compact(
+        'prospectos',
+        'estatus',
+        'estatusSeleccionado',
+        'sort',
+        'direction'
+    ));
+}
+
+
+
 
     public function create()
     {
@@ -89,9 +115,6 @@ class ProspectoController extends Controller
         return back()->with('success', 'Estatus actualizado');
     }
 
-    /**
-     * 🔥 CONVERSIÓN A CLIENTE (nivel banco)
-     */
     public function convertir($id)
     {
         DB::beginTransaction();
@@ -124,7 +147,6 @@ class ProspectoController extends Controller
                 'creado_por'   => auth()->id(),
             ]);
 
-            // CURP PRINCIPAL
             if (!empty($prospecto->curp)) {
                 ClienteCurp::create([
                     'cliente_id'   => $cliente->id,
@@ -133,7 +155,6 @@ class ProspectoController extends Controller
                 ]);
             }
 
-            // NSS PRINCIPAL
             if (!empty($prospecto->nss)) {
                 ClienteNss::create([
                     'cliente_id'   => $cliente->id,
@@ -142,7 +163,6 @@ class ProspectoController extends Controller
                 ]);
             }
 
-            // 🔹 CONTACTO (FIX REAL)
             if (!empty($prospecto->celular)) {
                 ClienteContacto::create([
                     'cliente_id'   => $cliente->id,
