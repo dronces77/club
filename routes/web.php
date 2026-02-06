@@ -24,7 +24,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/perfil', [DashboardController::class, 'perfil'])->name('perfil');
     Route::put('/perfil', [DashboardController::class, 'actualizarPerfil'])->name('perfil.update');
 
-    // Clientes (CRUD + extras)
+    // Clientes
     Route::get('/clientes/search', [ClienteController::class, 'search'])->name('clientes.search');
     Route::get('/clientes/exportar', [ClienteController::class, 'exportar'])->name('clientes.exportar');
     Route::get('/clientes/estadisticas', [ClienteController::class, 'estadisticas'])->name('clientes.estadisticas');
@@ -37,10 +37,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Prospectos
     Route::prefix('prospectos')->name('prospectos.')->group(function () {
+
         Route::get('/', [ProspectoController::class, 'index'])->name('index');
         Route::get('/create', [ProspectoController::class, 'create'])->name('create');
         Route::post('/', [ProspectoController::class, 'store'])->name('store');
         Route::put('{prospecto}/estatus', [ProspectoController::class, 'updateEstatus'])->name('updateEstatus');
-        Route::post('{prospecto}/convertir', [ProspectoController::class, 'convertir'])->name('convertir');
+
+        // ✅ ÚNICA LÍNEA CORREGIDA
+
+		Route::post('{prospecto}/convertir', [ProspectoController::class, 'convertir'])->name('convertir');
     });
 });
