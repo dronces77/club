@@ -22,7 +22,7 @@
                     <label class="form-label">Nombre <span class="text-danger">*</span></label>
                     <input type="text" name="nombre"
                         class="form-control @error('nombre') is-invalid @enderror"
-                        value="{{ old('nombre') }}" required>
+                        value="{{ old('nombre') }}" required maxlength="100">
                     @error('nombre')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
@@ -30,15 +30,15 @@
                     <label class="form-label">Apellido Paterno <span class="text-danger">*</span></label>
                     <input type="text" name="apellido_paterno"
                         class="form-control @error('apellido_paterno') is-invalid @enderror"
-                        value="{{ old('apellido_paterno') }}" required>
+                        value="{{ old('apellido_paterno') }}" required maxlength="100">
                     @error('apellido_paterno')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Apellido Materno <span class="text-danger">*</span></label>
+                    <label class="form-label">Apellido Materno</label><span class="text-danger">*</span></label>
                     <input type="text" name="apellido_materno"
                         class="form-control @error('apellido_materno') is-invalid @enderror"
-                        value="{{ old('apellido_materno') }}" required>
+                        value="{{ old('apellido_materno') }}" required maxlength="100">
                     @error('apellido_materno')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
@@ -52,45 +52,36 @@
             <div class="card-body row g-3">
                 <div class="col-md-4">
                     <label class="form-label">CURP <span class="text-danger">*</span></label>
-                    <input type="text"
-						name="curp"
-						maxlength="18"
-						minlength="18"
-						placeholder="18 dígitos"
+                    <input type="text" name="curp"
                         class="form-control text-uppercase @error('curp') is-invalid @enderror"
-                        value="{{ old('curp') }}" required>
-                    <small class="text-muted">Debe contener 18 caracteres</small>
+                        value="{{ old('curp') }}" required minlength="18" maxlength="18">
+						<small class="text-muted">Debe contener 18 caracteres</small>
                     @error('curp')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">NSS <span class="text-danger">*</span></label>
-                    <input type="text"
-                        name="nss"
-                        maxlength="11"
-                        minlength="11"
-                        placeholder="11 dígitos"
+                    <label class="form-label">NSS</label><span class="text-danger">*</span></label>
+                    <input type="text" name="nss"
                         class="form-control @error('nss') is-invalid @enderror"
-                        value="{{ old('nss') }}"
-                        required>
-                    <small class="text-muted">Número de Seguridad Social (11 dígitos)</small>
+                        value="{{ old('nss') }}" required minlength="11" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" pattern="[0-9]{11}">
+						<small class="text-muted">Número de Seguridad Social (11 dígitos)</small>
                     @error('nss')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Celular Principal <span class="text-danger">*</span></label>
-                    <input type="text" name="celular" maxlength="13" minlength="10"
+                    <label class="form-label">Celular</label><span class="text-danger">*</span></label>
+                    <input type="text" name="celular"
                         class="form-control @error('celular') is-invalid @enderror"
-                        value="{{ old('celular') }}" required>
-                    <small class="text-muted">Debe contener minimo 10 caracteres y maximo 13</small>
+                        value="{{ old('celular') }}" required minlength="10" maxlength="13">
+						<small class="text-muted">Debe contener minimo 10 digitos y maximo 13</small>
                     @error('celular')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
-<div class="mb-3">
-    <label for="notas" class="form-label">Notas</label>
-    <textarea name="notas" id="notas" class="form-control" maxlength="250">{{ old('notas') }}</textarea>
-</div>
-
+                <div class="col-12">
+                    <label class="form-label">Notas</label>
+                    <textarea name="notas" class="form-control" maxlength="250"  placeholder="Agrega alguna nota">{{ old('notas') }}</textarea>
+                    @error('notas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
             </div>
         </div>
 
@@ -101,6 +92,8 @@
         </div>
     </form>
 </div>
+
+
 
 
 {{-- ===== INCLUIR SELECT2 ===== --}}
