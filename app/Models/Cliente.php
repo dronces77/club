@@ -15,6 +15,10 @@ class Cliente extends Model
     protected $table = 'clientes';
     protected $primaryKey = 'id';
 
+    /**
+     * Se mantiene el fillable original ajustando a los campos de la tabla.
+     * Nota: created_at, updated_at y deleted_at se manejan automáticamente por Eloquent.
+     */
     protected $fillable = [
         'no_cliente',
         'tipo_cliente',
@@ -47,9 +51,7 @@ class Cliente extends Model
         'cliente_referidor_id',
         'creado_por',
         'actualizado_por',
-        'created_at',
-        'updated_at',
-        'deleted_at'
+		'estatus_cliente_id'
     ];
 
     protected $attributes = [
@@ -76,28 +78,27 @@ class Cliente extends Model
         parent::boot();
 
         // Al crear un nuevo registro: siempre es Prospecto
-static::creating(function ($cliente) {
+        static::creating(function ($cliente) {
 
-    // 👉 SOLO si NO viene definido
-    if (!isset($cliente->tipo_cliente)) {
-        $cliente->tipo_cliente = 'P';
-    }
+            // SOLO si NO viene definido
+            if (!isset($cliente->tipo_cliente)) {
+                $cliente->tipo_cliente = 'P';
+            }
 
-    // 👉 SOLO prospectos se limpian
-    if ($cliente->tipo_cliente === 'P') {
-        $cliente->estatus = null;
-        $cliente->no_cliente = null;
-    }
+            // SOLO prospectos se limpian
+            if ($cliente->tipo_cliente === 'P') {
+                $cliente->estatus = null;
+                $cliente->no_cliente = null;
+            }
 
-    if (empty($cliente->creado_por)) {
-        $cliente->creado_por = auth()->id() ?? 1;
-    }
+            if (empty($cliente->creado_por)) {
+                $cliente->creado_por = auth()->id() ?? 1;
+            }
 
-    if ($cliente->fecha_nacimiento && empty($cliente->edad)) {
-        $cliente->edad = Carbon::parse($cliente->fecha_nacimiento)->age;
-    }
-});
-
+            if ($cliente->fecha_nacimiento && empty($cliente->edad)) {
+                $cliente->edad = Carbon::parse($cliente->fecha_nacimiento)->age;
+            }
+        });
 
         // Al actualizar: verificar conversión a Cliente
         static::updating(function ($cliente) {
@@ -151,32 +152,27 @@ static::creating(function ($cliente) {
         return 'CP-' . $siguiente;
     }
 
-    /**
-     * SCOPE: Obtener solo prospectos (tipo_cliente != 'C')
-     */
+    // ======================
+    // Scopes
+    // ======================
     public function scopeProspectos($query)
     {
         return $query->where('tipo_cliente', '!=', 'C');
     }
 
-    /**
-     * SCOPE: Obtener solo clientes (tipo_cliente = 'C')
-     */
     public function scopeClientes($query)
     {
         return $query->where('tipo_cliente', 'C');
     }
 
-    /** SCOPE: Obtener por tipo específico */
     public function scopePorTipo($query, $tipo)
     {
         return $query->where('tipo_cliente', $tipo);
     }
 
     // ======================
-    // 🔥 FIX: Relaciones necesarias
+    // Relaciones
     // ======================
-
     public function instituto()
     {
         return $this->belongsTo(CatalogoInstituto::class, 'instituto_id');
@@ -217,37 +213,36 @@ static::creating(function ($cliente) {
         return $this->hasMany(ClienteContacto::class, 'cliente_id');
     }
 	
-	public function tramite()
-	{
-		return $this->belongsTo(CatalogoTramite::class, 'tramite_id');
-	}
+    public function tramite()
+    {
+        return $this->belongsTo(CatalogoTramite::class, 'tramite_id');
+    }
 	
-	public function tramite2()
-	{
-		return $this->belongsTo(CatalogoTramite::class, 'tramite2_id');
-	}
+    public function tramite2()
+    {
+        return $this->belongsTo(CatalogoTramite::class, 'tramite2_id');
+    }
 
-	public function modalidad()
-	{
-		return $this->belongsTo(CatalogoTramite::class, 'modalidad_id');
-	}
+    public function modalidad()
+    {
+        return $this->belongsTo(CatalogoModalidad::class, 'modalidad_id');
+    }
 
-	public function referidor()
-	{
-		return $this->belongsTo(CatalogoTramite::class, 'cliente_referidor_id');
-	}
+    public function referidor()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_referidor_id');
+    }
 	
-	public function creadoPor()
-	{
-		return $this->belongsTo(Usuario::class, 'creado_por');
-	}
+    public function creadoPor()
+    {
+        return $this->belongsTo(Usuario::class, 'creado_por');
+    }
 	
-	public function actualizadoPor()
-	{
-		return $this->belongsTo(Usuario::class, 'actualizado_por');
-	}
+    public function actualizadoPor()
+    {
+        return $this->belongsTo(Usuario::class, 'actualizado_por');
+    }
 
-	
     // ======================
     // Accessors
     // ======================
@@ -265,6 +260,7 @@ static::creating(function ($cliente) {
     {
         $tipos = [
             'C' => 'Cliente',
+            'P' => 'Prospecto'
         ];
         
         return $tipos[$this->tipo_cliente] ?? 'Desconocido';
@@ -272,21 +268,17 @@ static::creating(function ($cliente) {
 
     public function getEstatusTextoAttribute()
     {
-        if (!$this->estatus) {
-            return 'N/A';
-        }
-        
-        return $this->estatus;
+        return $this->estatus ?? 'N/A';
     }
 
     public function getFechaCreacionFormateadaAttribute()
     {
-        return $this->created_at ? Carbon::parse($this->created_at)->format('d/m/Y H:i') : 'N/A';
+        return $this->created_at ? $this->created_at->format('d/m/Y H:i') : 'N/A';
     }
 
     public function getFechaActualizacionFormateadaAttribute()
     {
-        return $this->updated_at ? Carbon::parse($this->updated_at)->format('d/m/Y H:i') : 'N/A';
+        return $this->updated_at ? $this->updated_at->format('d/m/Y H:i') : 'N/A';
     }
 
     public function getNombreCompletoAttribute()

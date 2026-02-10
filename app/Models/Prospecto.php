@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Prospecto extends Model
 {
     protected $table = 'prospectos';
-    public $timestamps = false;
+
+    // ✅ La tabla SÍ tiene created_at / updated_at
+    public $timestamps = true;
 
     protected $fillable = [
         'nombre',
@@ -20,13 +22,14 @@ class Prospecto extends Model
         'estatus_prospecto_id',
         'convertido',
         'cliente_id',
-        'no_cliente',
-        'fecha_creacion'
     ];
 
     public function estatus()
     {
-        return $this->belongsTo(CatalogoEstatusProspecto::class, 'estatus_prospecto_id');
+        return $this->belongsTo(
+            CatalogoEstatusProspecto::class,
+            'estatus_prospecto_id'
+        );
     }
 
     public function cliente()
