@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Prospecto;
 use App\Models\CatalogoInstituto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -12,61 +14,38 @@ class DashboardController extends Controller
     /**
      * Display the dashboard.
      */
-    public function index()
-    {
-        // Total de clientes
-        $totalClientes = Cliente::count();
-        
-        // Clientes activos
-        $clientesActivos = Cliente::where('estatus', 'Activo')->count();
-        
-        // No existe 'pendiente' en nuevo schema
-        $clientesPendientes = 0;
-        
-        // Clientes con pensión
-        $clientesConPension = Cliente::where(function($query) {
-                $query->whereNotNull('pension_default')
-                      ->orWhereNotNull('pension_normal')
-                      ->orWhere('pension_default', '>', 0)
-                      ->orWhere('pension_normal', '>', 0);
-            })
-            ->count();
-        
-        // IDs según schema: IMSS=13, ISSSTE=14
-        $clientesIMSS = Cliente::where(function($q) {
-                $q->where('instituto_id', 13)
-                  ->orWhere('instituto2_id', 13);
-            })
-            ->count();
-        
-        $clientesISSSTE = Cliente::where(function($q) {
-                $q->where('instituto_id', 14)
-                  ->orWhere('instituto2_id', 14);
-            })
-            ->count();
-        
-        // Clientes agregados este mes
-        $clientesMes = Cliente::whereMonth('created_at', Carbon::now()->month)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->count();
-        
-        // Clientes recientes (últimos 10)
-        $clientesRecientes = Cliente::with(['instituto', 'instituto2'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-        
-        return view('dashboard.index', compact(
-            'totalClientes',
-            'clientesActivos',
-            'clientesPendientes',
-            'clientesConPension',
-            'clientesIMSS',
-            'clientesISSSTE',
-            'clientesMes',
-            'clientesRecientes'
-        ));
-    }
+public function index()
+{
+    // 🔒 CLIENTES (pendiente de implementar)
+    $totalClientes = 0;
+    $clientesActivos = 0;
+    $clientesPendientes = 0;
+    $clientesConPension = 0;
+    $clientesIMSS = 0;
+    $clientesISSSTE = 0;
+    $clientesMes = 0;
+    $clientesRecientes = collect();
+
+    // ✅ PROSPECTOS
+    $prospectos = Prospecto::latest()->take(5)->get();
+
+    // ✅ ESTATUS (placeholder para no romper vista)
+    $estatusLista = collect(); // 👈 ESTA ES LA CLAVE
+
+    return view('dashboard.index', compact(
+        'totalClientes',
+        'clientesActivos',
+        'clientesPendientes',
+        'clientesConPension',
+        'clientesIMSS',
+        'clientesISSSTE',
+        'clientesMes',
+        'clientesRecientes',
+        'prospectos',
+        'estatusLista'
+    ));
+}
+
 
     /**
      * API para actualizar estadísticas del dashboard (AJAX)
@@ -74,8 +53,8 @@ class DashboardController extends Controller
     public function estadisticas()
     {
         $totalClientes = Cliente::count();
-        $clientesActivos = Cliente::where('estatus', 'Activo')->count();
-        $clientesPendientes = 0;
+        $clientesActivos = 0; // temporal
+        $clientesPendientes = 0; // temporal
         
         $clientesConPension = Cliente::where(function($query) {
                 $query->whereNotNull('pension_default')
