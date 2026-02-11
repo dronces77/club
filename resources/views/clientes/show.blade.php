@@ -221,79 +221,80 @@
             </div>
             
             <!-- Sección 2: Datos de Contacto -->
-            <div class="col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <i class="fas fa-address-book me-2"></i> Datos de Contacto
-                    </div>
-                    <div class="card-body">
-                        @php
-                            $contactosAgrupados = [];
-                            foreach($cliente->contactos ?? [] as $contacto) {
-                                $contactosAgrupados[$contacto->tipo] = $contacto->valor;
-                            }
-                        @endphp
-                        
-                        <div class="mb-3">
-                            <strong>Celular1:</strong><br>
-                            {{ $contactosAgrupados['celular1'] ?? 'No registrado' }}
-                            @if(isset($contactosAgrupados['celular1']))
-                                <a href="tel:{{ $contactosAgrupados['celular1'] }}" class="text-decoration-none ms-2">
-                                    <i class="fas fa-phone text-success"></i>
-                                </a>
-                            @endif
-                        </div>
-                        
-                        <div class="mb-3">
-                            <strong>Celular2:</strong><br>
-                            {{ $contactosAgrupados['celular2'] ?? 'No registrado' }}
-                            @if(isset($contactosAgrupados['celular2']))
-                                <a href="tel:{{ $contactosAgrupados['celular2'] }}" class="text-decoration-none ms-2">
-                                    <i class="fas fa-phone text-success"></i>
-                                </a>
-                            @endif
-                        </div>
-                        
-                        <div class="mb-3">
-                            <strong>TelCasa:</strong><br>
-                            {{ $contactosAgrupados['tel_casa'] ?? 'No registrado' }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <strong>Correo1:</strong><br>
-                            @if(isset($contactosAgrupados['correo1']))
-                                <a href="mailto:{{ $contactosAgrupados['correo1'] }}" class="text-decoration-none">
-                                    {{ $contactosAgrupados['correo1'] }}
-                                </a>
-                            @else
-                                No registrado
-                            @endif
-                        </div>
-                        
-                        <div class="mb-3">
-                            <strong>Correo2:</strong><br>
-                            @if(isset($contactosAgrupados['correo2']))
-                                <a href="mailto:{{ $contactosAgrupados['correo2'] }}" class="text-decoration-none">
-                                    {{ $contactosAgrupados['correo2'] }}
-                                </a>
-                            @else
-                                No registrado
-                            @endif
-                        </div>
-                        
-                        <div>
-                            <strong>CorreoPersonal:</strong><br>
-                            @if(isset($contactosAgrupados['correo_personal']))
-                                <a href="mailto:{{ $contactosAgrupados['correo_personal'] }}" class="text-decoration-none">
-                                    {{ $contactosAgrupados['correo_personal'] }}
-                                </a>
-                            @else
-                                No registrado
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
+			<div class="col-md-6 mb-4">
+				<div class="card h-100">
+					<div class="card-header">
+						<i class="fas fa-address-book me-2"></i> Datos de Contacto
+					</div>
+					<div class="card-body">
+						@php
+							$contactosAgrupados = [];
+							foreach($cliente->contactos ?? [] as $contacto) {
+								$contactosAgrupados[$contacto->tipo] = $contacto->valor;
+							}
+						@endphp
+						
+						<div class="row">
+							<!-- Columna 1 -->
+							<div class="col-md-6">
+									<i class="fa-solid fa-mobile-screen-button"></i><strong> Celular 1:</strong><br>
+									{{ $contactosAgrupados['celular'] ?? 'No registrado' }}
+									@if(isset($contactosAgrupados['celular']))
+										<a href="tel:{{ $contactosAgrupados['celular'] }}" class="text-decoration-none ms-2">
+											
+										</a>
+									@endif
+								<br><br>
+								
+									<i class="fas fa-phone text-success"></i><strong> Celular 2:</strong><br>
+									{{ $contactosAgrupados['celular2'] ?? 'No registrado' }}
+									@if(isset($contactosAgrupados['celular2']))
+										<a href="tel:{{ $contactosAgrupados['celular2'] }}" class="text-decoration-none ms-2">
+											<i class="fas fa-phone text-success"></i>
+										</a>
+									@endif
+								<br><br>
+								
+									<i class="fas fa-phone text-success"></i><strong> Tel Casa:</strong><br>
+									{{ $contactosAgrupados['tel_casa'] ?? 'No registrado' }}
+								<br><br>
+							</div>
+							
+							<!-- Columna 2 -->
+							<div class="col-md-6">
+									<strong>Correo 1:</strong><br>
+									@if(isset($contactosAgrupados['correo1']))
+										<a href="mailto:{{ $contactosAgrupados['correo1'] }}" class="text-decoration-none">
+											{{ $contactosAgrupados['correo1'] }}
+										</a>
+									@else
+										No registrado
+									@endif
+								<br><br>
+								
+									<strong>Correo 2:</strong><br>
+									@if(isset($contactosAgrupados['correo2']))
+										<a href="mailto:{{ $contactosAgrupados['correo2'] }}" class="text-decoration-none">
+											{{ $contactosAgrupados['correo2'] }}
+										</a>
+									@else
+										No registrado
+									@endif
+								<br><br>
+								
+									<strong>Correo Personal:</strong><br>
+									@if(isset($contactosAgrupados['correo_personal']))
+										<a href="mailto:{{ $contactosAgrupados['correo_personal'] }}" class="text-decoration-none">
+											{{ $contactosAgrupados['correo_personal'] }}
+										</a>
+									@else
+										No registrado
+									@endif
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
         </div>
     </div>
     
@@ -351,12 +352,16 @@
                                 {{ $cliente->semanas_imss ?? 'N/A' }}
                             </div>
                             <div class="col-md-6">
-                                <strong>FechaAlta:</strong><br>
-                                {{ $cliente->fecha_alta ? $cliente->fecha_alta->format('d/m/Y') : 'N/A' }}
+                                <strong>.</strong><br>
+								.
                             </div>
                         </div>
                         
                         <div class="row">
+                            <div class="col-md-6">
+                                <strong>FechaAlta:</strong><br>
+                                {{ $cliente->fecha_alta ? $cliente->fecha_alta->format('d/m/Y') : 'N/A' }}
+                            </div>
                             <div class="col-md-6">
                                 <strong>FechaBaja:</strong><br>
                                 {{ $cliente->fecha_baja ? $cliente->fecha_baja->format('d/m/Y') : 'N/A' }}

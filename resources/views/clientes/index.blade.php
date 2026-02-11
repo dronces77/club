@@ -85,7 +85,6 @@
         </div>
         <div class="card-body">
             <form id="searchForm" method="GET" action="{{ route('clientes.index') }}" class="row g-3">
-                <!-- 🔍 BÚSQUEDA POR TEXTO (AUTOCOMPLETE) -->
                 <div class="col-md-4 position-relative">
                     <label for="searchInput" class="form-label">
                         <i class="fas fa-search me-1"></i>Buscar cliente
@@ -114,15 +113,12 @@
                         Busca por: No. Cliente, Nombre, Apellido Paterno, Apellido Materno, CURP o NSS
                     </small>
                     
-                    <!-- 🔍 RESULTADOS DE AUTOCOMPLETE -->
                     <div id="searchResults" 
                          class="position-absolute bg-white border rounded shadow mt-1" 
                          style="display: none; z-index: 1050; width: 100%; max-width: 500px; max-height: 400px; overflow-y: auto;">
-                        <!-- Los resultados de autocomplete se cargarán aquí -->
                     </div>
                 </div>
                 
-                <!-- 📊 FILTRO POR ESTATUS -->
                 <div class="col-md-3">
                     <label for="estatusFilter" class="form-label">
                         <i class="fas fa-flag me-1"></i>Estatus
@@ -140,7 +136,6 @@
                     </select>
                 </div>
                 
-                <!-- 🏢 FILTRO POR INSTITUCIÓN -->
                 <div class="col-md-3">
                     <label for="institutoFilter" class="form-label">
                         <i class="fas fa-building me-1"></i>Institución
@@ -160,7 +155,6 @@
                     </select>
                 </div>
                 
-                <!-- 🔘 BOTONES DE ACCIÓN -->
                 <div class="col-md-2 d-flex align-items-end">
                     <div class="d-grid gap-2 w-100">
                         <button type="submit" class="btn btn-primary">
@@ -173,8 +167,7 @@
                 </div>
             </form>
         </div>
-        
-        <!-- 📊 RESUMEN DE FILTROS ACTIVOS -->
+
         @if(request('search') || (request('estatus') && request('estatus') != 'todos') || (request('instituto_id') && request('instituto_id') != 'todos'))
         <div class="card-footer bg-light">
             <div class="d-flex align-items-center">
@@ -230,27 +223,8 @@
         </div>
         
         <div class="card-body">
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show">
-                    <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
+            @include('partials.alerts') <!-- Incluye success, error, warning -->
             
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-            
-            @if(session('warning'))
-                <div class="alert alert-warning alert-dismissible fade show">
-                    <i class="fas fa-exclamation-triangle me-2"></i> {{ session('warning') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
             <div class="table-responsive">
                 <table class="table table-hover table-striped">
                     <thead class="table-dark">
@@ -270,9 +244,7 @@
                     <tbody>
                         @forelse($clientes as $cliente)
                         <tr>
-                            <td>
-                                <strong>{{ $cliente->no_cliente ?? 'N/A' }}</strong>
-                            </td>
+                            <td><strong>{{ $cliente->no_cliente ?? 'N/A' }}</strong></td>
                             <td>{{ $cliente->nombre }}</td>
                             <td>{{ $cliente->apellido_paterno ?? '-' }}</td>
                             <td>{{ $cliente->apellido_materno ?? '-' }}</td>
@@ -385,7 +357,6 @@
                 </div>
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm mb-0">
-                        {{-- Paginación personalizada manteniendo filtros --}}
                         @if($clientes->onFirstPage())
                             <li class="page-item disabled">
                                 <span class="page-link">« Anterior</span>
@@ -440,13 +411,12 @@
                     <p>
                         Para ver prospectos, imposibles, bajas y suspendidos, visita la vista de <strong>Prospectos</strong>.
                     </p>
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-lightbulb me-2"></i>
-                        <strong>Tip:</strong> Los registros nuevos se crean como Prospectos y luego se convierten a Clientes.
-                    </div>
                 </div>
             </div>
         </div>
+    </div>
+
+</div>
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-light">

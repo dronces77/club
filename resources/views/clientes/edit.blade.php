@@ -65,7 +65,7 @@
                         {{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
                     </p>
                 </div>
-                
+
                 <div class="col-md-3">
                     <label class="form-label"><strong>Estatus actual:</strong></label>
                     <p class="form-control-plaintext">
@@ -76,7 +76,7 @@
                             elseif($cliente->estatus == 'Terminado') $badgeClass = 'badge-info';
                             elseif($cliente->estatus == 'Baja') $badgeClass = 'badge-danger';
                         @endphp
-                        <span class="badge {{ $badgeClass }}">{{ $cliente->estatus }}</span>
+                        <p class="form-control-plaintext">{{ $cliente->estatus }}</p>
                     </p>
                 </div>
             </div>
