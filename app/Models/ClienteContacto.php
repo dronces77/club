@@ -31,7 +31,7 @@ class ClienteContacto extends Model
 
     public function scopePrincipales($query)
     {
-        return $query->where('es_principal', 1);
+        return $query->where('es_principal', true);
     }
 
     public function scopePorTipo($query, $tipo)
@@ -43,9 +43,9 @@ class ClienteContacto extends Model
     {
         self::where('cliente_id', $this->cliente_id)
             ->where('tipo', $this->tipo)
-            ->update(['es_principal' => 0]);
+            ->update(['es_principal' => false]);
 
-        $this->es_principal = 1;
+        $this->es_principal = true;
         return $this->save();
     }
 }

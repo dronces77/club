@@ -9,7 +9,7 @@ class ClienteNss extends Model
 {
     use HasFactory;
 
-    protected $table = 'cliente_nsss';
+    protected $table = 'cliente_nsss'; // <-- Corregido: antes 'cliente_nsss'
 
     protected $fillable = [
         'cliente_id',

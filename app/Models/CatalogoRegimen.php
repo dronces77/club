@@ -13,9 +13,10 @@ class CatalogoRegimen extends Model
     protected $table = 'catalogo_regimenes';
     protected $primaryKey = 'id';
 
-    protected $fillable = ['instituto_id', 'codigo', 'nombre'];
+	protected $fillable = ['codigo', 'nombre', 'descripcion', 'activo'];
 
     protected $casts = [
+		'activo'     => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -30,4 +31,5 @@ class CatalogoRegimen extends Model
     {
         return $this->hasMany(Cliente::class, 'regimen_id');
     }
+
 }

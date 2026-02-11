@@ -16,8 +16,7 @@ class Cliente extends Model
     protected $primaryKey = 'id';
 
     /**
-     * Se mantiene el fillable original ajustando a los campos de la tabla.
-     * Nota: created_at, updated_at y deleted_at se manejan automáticamente por Eloquent.
+     * Campos fillable
      */
     protected $fillable = [
         'no_cliente',
@@ -47,11 +46,11 @@ class Cliente extends Model
         'fecha_alta_issste',
         'fecha_baja_issste',
         'fecha_contrato',
-        'estatus',
         'cliente_referidor_id',
         'creado_por',
         'actualizado_por',
-		'estatus_cliente_id'
+        'estatus_cliente_id',
+        'modalidad2_id'
     ];
 
     protected $attributes = [
@@ -77,18 +76,14 @@ class Cliente extends Model
     {
         parent::boot();
 
-        // Al crear un nuevo registro: siempre es Prospecto
         static::creating(function ($cliente) {
-
-            // SOLO si NO viene definido
             if (!isset($cliente->tipo_cliente)) {
                 $cliente->tipo_cliente = 'P';
             }
 
-            // SOLO prospectos se limpian
             if ($cliente->tipo_cliente === 'P') {
-                $cliente->estatus = null;
                 $cliente->no_cliente = null;
+                $cliente->estatus_cliente_id = null;
             }
 
             if (empty($cliente->creado_por)) {
@@ -100,34 +95,27 @@ class Cliente extends Model
             }
         });
 
-        // Al actualizar: verificar conversión a Cliente
         static::updating(function ($cliente) {
             $cliente->actualizado_por = auth()->id() ?? 1;
-            
-            // Si está cambiando a Cliente y aún no tiene número
+
+            // Conversión a Cliente
             if ($cliente->isDirty('tipo_cliente') && $cliente->tipo_cliente === 'C') {
-                // Solo para nuevos clientes
                 if (empty($cliente->no_cliente)) {
                     $cliente->no_cliente = self::generarNumeroCliente();
                 }
-                
-                // Asignar estatus Activo por defecto
-                if (empty($cliente->estatus)) {
-                    $cliente->estatus = 'Activo';
+                if (empty($cliente->estatus_cliente_id)) {
+                    $cliente->estatus_cliente_id = \App\Models\CatalogoEstatusCliente::where('nombre', 'Activo')->first()->id ?? null;
                 }
-                
-                // Asignar fecha de contrato si no tiene
                 if (empty($cliente->fecha_contrato)) {
                     $cliente->fecha_contrato = Carbon::now();
                 }
             }
-            
-            // Si deja de ser cliente, quitar estatus
+
+            // Si deja de ser cliente
             if ($cliente->isDirty('tipo_cliente') && $cliente->tipo_cliente !== 'C') {
-                $cliente->estatus = null;
+                $cliente->estatus_cliente_id = null;
             }
-            
-            // Calcular edad si cambió la fecha de nacimiento
+
             if ($cliente->isDirty('fecha_nacimiento') && $cliente->fecha_nacimiento) {
                 $cliente->edad = Carbon::parse($cliente->fecha_nacimiento)->age;
             }
@@ -170,9 +158,59 @@ class Cliente extends Model
         return $query->where('tipo_cliente', $tipo);
     }
 
+    public function scopePorEstatus($query, $nombre)
+    {
+        return $query->whereHas('estatusCliente', function ($q) use ($nombre) {
+            $q->where('nombre', $nombre);
+        });
+    }
+
+    public function scopeActivo($query)
+    {
+        return $query->porEstatus('Activo');
+    }
+
     // ======================
     // Relaciones
     // ======================
+// Relación con la tabla de estatus
+public function estatusCliente()
+{
+    return $this->belongsTo(CatalogoEstatusCliente::class, 'estatus_cliente_id');
+}
+
+public function tipoCliente()
+{
+    return $this->belongsTo(TipoCliente::class, 'tipo_cliente_id');
+}
+
+public function estatusImss()
+{
+    return $this->belongsTo(EstatusImss::class, 'estatus_imss_id');
+}
+
+// Accesor para que $cliente->estatus siga funcionando
+public function getEstatusAttribute()
+{
+    return $this->estatusCliente ? $this->estatusCliente->nombre : null;
+}
+
+// Mutator opcional para poder asignar $cliente->estatus = 'Activo';
+public function setEstatusAttribute($value)
+{
+    $estatus = CatalogoEstatusCliente::where('nombre', $value)->first();
+    $this->estatus_cliente_id = $estatus ? $estatus->id : null;
+}
+
+// Scope para filtrar por estatus
+public function scopeConEstatus($query, $nombreEstatus)
+{
+    return $query->whereHas('estatusCliente', function($q) use ($nombreEstatus) {
+        $q->where('nombre', $nombreEstatus);
+    });
+}
+
+
     public function instituto()
     {
         return $this->belongsTo(CatalogoInstituto::class, 'instituto_id');
@@ -212,12 +250,12 @@ class Cliente extends Model
     {
         return $this->hasMany(ClienteContacto::class, 'cliente_id');
     }
-	
+
     public function tramite()
     {
         return $this->belongsTo(CatalogoTramite::class, 'tramite_id');
     }
-	
+
     public function tramite2()
     {
         return $this->belongsTo(CatalogoTramite::class, 'tramite2_id');
@@ -232,12 +270,12 @@ class Cliente extends Model
     {
         return $this->belongsTo(Cliente::class, 'cliente_referidor_id');
     }
-	
+
     public function creadoPor()
     {
         return $this->belongsTo(Usuario::class, 'creado_por');
     }
-	
+
     public function actualizadoPor()
     {
         return $this->belongsTo(Usuario::class, 'actualizado_por');
@@ -268,7 +306,7 @@ class Cliente extends Model
 
     public function getEstatusTextoAttribute()
     {
-        return $this->estatus ?? 'N/A';
+        return $this->estatusCliente->nombre ?? 'N/A';
     }
 
     public function getFechaCreacionFormateadaAttribute()
@@ -284,5 +322,17 @@ class Cliente extends Model
     public function getNombreCompletoAttribute()
     {
         return trim($this->nombre . ' ' . $this->apellido_paterno . ' ' . $this->apellido_materno);
+    }
+
+    // ======================
+    // Helper para asignar estatus
+    // ======================
+    public function setEstatus(string $nombre)
+    {
+        $estatus = \App\Models\CatalogoEstatusCliente::where('nombre', $nombre)->first();
+        if ($estatus) {
+            $this->estatus_cliente_id = $estatus->id;
+            $this->save();
+        }
     }
 }
