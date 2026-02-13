@@ -9,6 +9,7 @@ use App\Models\CatalogoInstituto;
 use App\Models\CatalogoRegimen;
 use App\Models\CatalogoTramite;
 use App\Models\CatalogoModalidad;
+use App\Models\CatalogoTiposContacto;
 use App\Models\ClienteCurp;
 use App\Models\ClienteRfc;
 use App\Models\ClienteNss;
@@ -376,6 +377,7 @@ if ($request->filled('estatus') && $request->estatus !== 'todos') {
      */
 public function show(Cliente $cliente)
 {
+    // Cargamos todas las relaciones necesarias
     $cliente->load([
         'instituto',
         'regimen',
@@ -397,12 +399,17 @@ public function show(Cliente $cliente)
             $query->orderBy('es_principal', 'desc');
         },
         'contactos' => function($query) {
-            $query->orderBy('tipo');
+            // Ordenar por el nombre del tipo de contacto usando la relación tipoContacto
+            $query->with('tipoContacto')
+                  ->join('catalogo_tipos_contacto', 'cliente_contactos.tipo_contacto_id', '=', 'catalogo_tipos_contacto.id')
+                  ->orderBy('catalogo_tipos_contacto.nombre', 'asc')
+                  ->select('cliente_contactos.*'); // Muy importante para no romper el modelo
         }
     ]);
-    
+
     return view('clientes.show', compact('cliente'));
 }
+
 
 
     /**
@@ -410,52 +417,74 @@ public function show(Cliente $cliente)
      */
 public function edit(Cliente $cliente)
 {
+    // Evitar edición de clientes eliminados
     if ($cliente->deleted_at) {
         return redirect()->route('clientes.index')
             ->with('error', 'No se puede editar un cliente eliminado.');
     }
 
+    // Solo clientes tipo 'C'
     if ($cliente->tipo_cliente !== 'C') {
         return redirect()->route('clientes.show', $cliente)
             ->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
     }
 
-    // CATÁLOGOS
+    // Catálogos
     $institutos = CatalogoInstituto::where('activo', true)->get();
     $regimenes = CatalogoRegimen::where('activo', true)->get();
     $tramites = CatalogoTramite::where('activo', true)->get();
-    $estatuses = CatalogoEstatusCliente::where('activo', true)->get();
+    $estatuses = CatalogoEstatusCliente::where('activo', true)->orderBy('orden')->get();
+    $tiposContacto = CatalogoTiposContacto::where('activo', true)->orderBy('orden')->get();
 
-    $modalidadesImss = CatalogoModalidad::where('activo', true)
-        ->whereIn('codigo', ['NA', 'M10', 'M40'])
-        ->get();
+    // Modalidades
+    $modalidadesImss = CatalogoModalidad::where('activo', true)->whereIn('codigo', ['NA','M10','M40'])->get();
+    $modalidadesIssste = CatalogoModalidad::where('activo', true)->whereIn('codigo', ['NA','CV'])->get();
 
-    $modalidadesIssste = CatalogoModalidad::where('activo', true)
-        ->whereIn('codigo', ['NA', 'CV'])
-        ->get();
-
-    // Clientes referencia
-    $clientesReferencia = Cliente::select('id', 'no_cliente', 'nombre', 'apellido_paterno', 'apellido_materno')
-        ->where('id', '!=', $cliente->id)
+    // Clientes para referencia (sin incluir al cliente actual)
+    $clientesReferencia = Cliente::select('id','no_cliente','nombre','apellido_paterno','apellido_materno')
+        ->where('id','!=',$cliente->id)
         ->orderBy('nombre')
         ->get()
-        ->map(function($clienteRef) {
-            $clienteRef->nombre_completo =
-                "{$clienteRef->no_cliente} - {$clienteRef->nombre} {$clienteRef->apellido_paterno} {$clienteRef->apellido_materno}";
-            return $clienteRef;
+        ->map(function($c) {
+            $c->nombre_completo = "{$c->no_cliente} - {$c->nombre} {$c->apellido_paterno} {$c->apellido_materno}";
+            return $c;
         });
 
-    // Relaciones auxiliares
-    $cliente->load(['curps', 'rfcs', 'nss', 'contactos']);
+    // Cargar relaciones
+    $cliente->load(['curps','rfcs','nss','contactos']);
 
-    $curps = $cliente->curps->pluck('curp')->toArray();
-    $rfcs = $cliente->rfcs->pluck('rfc')->toArray();
-    $nss = $cliente->nss->pluck('nss')->toArray();
+    // ✅ CORREGIDO: Enviar arrays con estructura completa (incluye es_principal)
+    $curps = $cliente->curps->map(function($item) {
+        return [
+            'curp' => $item->curp,
+            'es_principal' => $item->es_principal
+        ];
+    })->toArray();
+    
+    $rfcs = $cliente->rfcs->map(function($item) {
+        return [
+            'rfc' => $item->rfc,
+            'es_principal' => $item->es_principal
+        ];
+    })->toArray();
+    
+    $nss = $cliente->nss->map(function($item) {
+        return [
+            'nss' => $item->nss,
+            'es_principal' => $item->es_principal
+        ];
+    })->toArray();
 
-    $contactos = [];
-    foreach ($cliente->contactos as $contacto) {
-        $contactos[$contacto->tipo] = $contacto->valor;
-    }
+	// ✅ CONTACTOS - Versión CORREGIDA
+	$contactos = [];
+	foreach ($cliente->contactos as $index => $contacto) {
+		$contactos[] = [
+			'id' => $contacto->id,
+			'tipo_contacto_id' => $contacto->tipo_contacto_id,  // ✅ AHORA SÍ
+			'valor' => $contacto->valor,
+			'es_principal' => $contacto->es_principal
+		];
+	}
 
     return view('clientes.edit', compact(
         'cliente',
@@ -463,6 +492,7 @@ public function edit(Cliente $cliente)
         'regimenes',
         'tramites',
         'estatuses',
+        'tiposContacto',
         'modalidadesImss',
         'modalidadesIssste',
         'clientesReferencia',
@@ -473,106 +503,257 @@ public function edit(Cliente $cliente)
     ));
 }
 
+
+
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Cliente $cliente)
-    {
-        // Verificar si el cliente está eliminado
-        if ($cliente->deleted_at) {
-            return back()->with('error', 'No se puede actualizar un cliente eliminado.');
-        }
-        
-        // Solo clientes pueden ser editados completamente
-        if ($cliente->tipo_cliente !== 'C') {
-            return back()->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
-        }
-        
-        // ========== VALIDACIONES ==========
-        $rules = Cliente::$rulesUpdate;
-        
-        // ✅ Validaciones COMPLETAS para todos los campos
-        $this->agregarValidacionesCompletas($rules, $request, $cliente);
-        
-        $validated = $request->validate($rules);
-        
-        try {
-            // 🔍 LOGGING: Inicio de actualización
-            Log::info('Actualizando cliente', [
-                'cliente_id' => $cliente->id,
-                'usuario_id' => auth()->id(),
-                'datos' => $request->except(['_token', '_method']),
-                'timestamp' => now()
-            ]);
-            
-            DB::beginTransaction();
-            
-            $validated['actualizado_por'] = auth()->id();
-            
-            if ($request->filled('fecha_nacimiento')) {
-                $validated['edad'] = Carbon::parse($request->fecha_nacimiento)->age;
-            }
-            
-            // Limpiar campos ISSSTE si no se seleccionó ISSSTE
-            if (!$request->filled('instituto2_id') || $request->instituto2_id != 14) {
-                $validated['instituto2_id'] = null;
-                $validated['regimen2_id'] = null;
-                $validated['tramite2_id'] = null;
-                $validated['modalidad_issste'] = null;
-                $validated['nss_issste'] = null;
-                $validated['fecha_alta_issste'] = null;
-                $validated['fecha_baja_issste'] = null;
-                $validated['anios_servicio_issste'] = null;
-            }
-            
-            $cliente->update($validated);
-            
-            // ========== MANEJAR CURPs ==========
-            $this->manejarCurpsCorregido($cliente, $request);
-            
-            // ========== MANEJAR RFCs ==========
-            $this->manejarRfcsCorregido($cliente, $request);
-            
-            // ========== MANEJAR NSS ==========
-            $this->manejarNssCorregido($cliente, $request);
-            
-            // ========== MANEJAR CONTACTOS ==========
-            $this->manejarContactosCorregido($cliente, $request);
-            
-            DB::commit();
-            
-            // 🔍 LOGGING: Actualización exitosa
-            Log::info('Cliente actualizado exitosamente', [
-                'cliente_id' => $cliente->id,
-                'cambios' => $cliente->getChanges(),
-                'timestamp' => now()
-            ]);
-            
-            return redirect()->route('clientes.show', $cliente)
-                ->with('success', 'Cliente actualizado exitosamente.');
+public function update(Request $request, Cliente $cliente)
+{
+    if ($cliente->deleted_at) {
+        return redirect()->route('clientes.index')
+            ->with('error', 'No se puede actualizar un cliente eliminado.');
+    }
+
+    if ($cliente->tipo_cliente !== 'C') {
+        return redirect()->route('clientes.show', $cliente)
+            ->with('warning', 'Solo los clientes tipo "Cliente" pueden ser actualizados completamente.');
+    }
+
+    // =============================================
+    // 🚨 PASO 1: VALIDAR UNICIDAD ANTES DE TODO
+    // =============================================
+    
+    // Validar CURPs duplicadas en OTROS clientes
+    if ($request->has('curps') && is_array($request->curps)) {
+        foreach ($request->curps as $curpItem) {
+            if (!empty($curpItem['curp'])) {
+                $curp = trim($curpItem['curp']);
+                $existe = ClienteCurp::where('curp', $curp)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
                 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            throw $e;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            // Capturar error de duplicado
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                preg_match("/Duplicate entry '(.+?)' for key/", $e->getMessage(), $matches);
-                $valorDuplicado = $matches[1] ?? 'desconocido';
-                $campo = $this->detectarCampoDuplicado($e->getMessage());
-                
-                return back()
-                    ->withInput()
-                    ->with('error', "Error: El valor '{$valorDuplicado}' en el campo {$campo} ya está registrado para otro cliente. Por favor, verifica los datos.");
+                if ($existe) {
+                    return back()
+                        ->withInput()
+                        ->with('error', "❌ La CURP '{$curp}' ya está registrada para OTRO cliente. No se puede guardar.");
+                }
             }
-            
-            return back()
-                ->withInput()
-                ->with('error', 'Error al actualizar el cliente: ' . $e->getMessage());
         }
     }
+
+    // Validar RFCs duplicados en OTROS clientes
+    if ($request->has('rfcs') && is_array($request->rfcs)) {
+        foreach ($request->rfcs as $rfcItem) {
+            if (!empty($rfcItem['rfc'])) {
+                $rfc = trim($rfcItem['rfc']);
+                $existe = ClienteRfc::where('rfc', $rfc)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
+                
+                if ($existe) {
+                    return back()
+                        ->withInput()
+                        ->with('error', "❌ El RFC '{$rfc}' ya está registrado para OTRO cliente. No se puede guardar.");
+                }
+            }
+        }
+    }
+
+    // Validar NSS duplicados en OTROS clientes
+    if ($request->has('nss') && is_array($request->nss)) {
+        foreach ($request->nss as $nssItem) {
+            if (!empty($nssItem['nss'])) {
+                $nss = trim($nssItem['nss']);
+                $existe = ClienteNss::where('nss', $nss)
+                    ->where('cliente_id', '!=', $cliente->id)
+                    ->exists();
+                
+                if ($existe) {
+                    return back()
+                        ->withInput()
+                        ->with('error', "❌ El NSS '{$nss}' ya está registrado para OTRO cliente. No se puede guardar.");
+                }
+            }
+        }
+    }
+
+    // =============================================
+    // 🚨 PASO 2: VALIDAR CAMPOS DEL FORMULARIO
+    // =============================================
+    
+    $validated = $request->validate([
+        // Datos personales
+        'nombre' => 'required|string|max:255',
+        'apellido_paterno' => 'required|string|max:255',
+        'apellido_materno' => 'nullable|string|max:255',
+        'fecha_nacimiento' => 'nullable|date',
+        'estatus_cliente_id' => 'required|exists:catalogo_estatus_clientes,id',
+        'fecha_contrato' => 'nullable|date',
+        'cliente_referidor_id' => 'nullable|exists:clientes,id',
+        
+        // Datos económicos
+        'pension_default' => 'nullable|numeric',
+        'pension_normal' => 'nullable|numeric',
+        'comision' => 'nullable|numeric',
+        'honorarios' => 'nullable|numeric',
+        
+        // IMSS
+        'instituto_id' => 'nullable|exists:catalogo_institutos,id',
+        'regimen_id' => 'nullable|exists:catalogo_regimenes,id',
+        'tramite_id' => 'nullable|exists:catalogo_tramites,id',
+        'modalidad_id' => 'nullable|exists:catalogo_modalidades,id',
+        'semanas_imss' => 'nullable|integer',
+        'fecha_alta' => 'nullable|date',
+        'fecha_baja' => 'nullable|date',
+        
+        // ISSSTE
+        'instituto2_id' => 'nullable|exists:catalogo_institutos,id',
+        'regimen2_id' => 'nullable|exists:catalogo_regimenes,id',
+        'tramite2_id' => 'nullable|exists:catalogo_tramites,id',
+        'modalidad_issste' => 'nullable|string|max:10',
+        'anios_servicio_issste' => 'nullable|integer',
+        'fecha_alta_issste' => 'nullable|date',
+        'fecha_baja_issste' => 'nullable|date',
+        'nss_issste' => 'nullable|string|max:11',
+        
+        // Arrays dinámicos
+        'curps' => 'nullable|array',
+        'curps.*.curp' => 'required|string|max:18',
+        'curps.*.es_principal' => 'nullable|boolean',
+        
+        'rfcs' => 'nullable|array',
+        'rfcs.*.rfc' => 'required|string|max:13',
+        'rfcs.*.es_principal' => 'nullable|boolean',
+        
+        'nss' => 'nullable|array',
+        'nss.*.nss' => 'required|string|max:11',
+        'nss.*.es_principal' => 'nullable|boolean',
+        
+		// ✅ VALIDACIÓN CORRECTA PARA CONTACTOS
+		'contactos' => 'nullable|array',
+		'contactos.*.tipo_contacto_id' => 'required|exists:catalogo_tipos_contacto,id',
+		'contactos.*.valor' => 'required|string|max:255',
+		'contactos.*.es_principal' => 'nullable|boolean',
+    ]);
+
+    // =============================================
+    // 🚨 PASO 3: SOLO SI TODO ESTÁ BIEN, GUARDAR
+    // =============================================
+    
+    try {
+        DB::beginTransaction();
+
+        // Actualizar cliente
+        $cliente->update([
+            'nombre' => $validated['nombre'],
+            'apellido_paterno' => $validated['apellido_paterno'],
+            'apellido_materno' => $validated['apellido_materno'] ?? null,
+            'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
+            'estatus_cliente_id' => $validated['estatus_cliente_id'],
+            'fecha_contrato' => $validated['fecha_contrato'] ?? null,
+            'cliente_referidor_id' => $validated['cliente_referidor_id'] ?? null,
+            'pension_default' => $validated['pension_default'] ?? 0,
+            'pension_normal' => $validated['pension_normal'] ?? 0,
+            'comision' => $validated['comision'] ?? 0,
+            'honorarios' => $validated['honorarios'] ?? 0,
+            'instituto_id' => $validated['instituto_id'] ?? null,
+            'regimen_id' => $validated['regimen_id'] ?? null,
+            'tramite_id' => $validated['tramite_id'] ?? null,
+            'modalidad_id' => $validated['modalidad_id'] ?? null,
+            'semanas_imss' => $validated['semanas_imss'] ?? null,
+            'fecha_alta' => $validated['fecha_alta'] ?? null,
+            'fecha_baja' => $validated['fecha_baja'] ?? null,
+            'instituto2_id' => $validated['instituto2_id'] ?? null,
+            'regimen2_id' => $validated['regimen2_id'] ?? null,
+            'tramite2_id' => $validated['tramite2_id'] ?? null,
+            'modalidad2_id' => $validated['modalidad_issste'] ?? null,
+            'anios_servicio_issste' => $validated['anios_servicio_issste'] ?? null,
+            'fecha_alta_issste' => $validated['fecha_alta_issste'] ?? null,
+            'fecha_baja_issste' => $validated['fecha_baja_issste'] ?? null,
+            'nss_issste' => $validated['nss_issste'] ?? null,
+        ]);
+
+        // ✅ CURPs - Solo si pasó validación
+        if ($request->has('curps')) {
+            $cliente->curps()->delete();
+            foreach ($validated['curps'] as $curpItem) {
+                if (!empty($curpItem['curp'])) {
+                    $cliente->curps()->create([
+                        'curp' => $curpItem['curp'],
+                        'es_principal' => $curpItem['es_principal'] ?? false
+                    ]);
+                }
+            }
+        }
+
+        // ✅ RFCs
+        if ($request->has('rfcs')) {
+            $cliente->rfcs()->delete();
+            foreach ($validated['rfcs'] as $rfcItem) {
+                if (!empty($rfcItem['rfc'])) {
+                    $cliente->rfcs()->create([
+                        'rfc' => $rfcItem['rfc'],
+                        'es_principal' => $rfcItem['es_principal'] ?? false
+                    ]);
+                }
+            }
+        }
+
+        // ✅ NSS
+        if ($request->has('nss')) {
+            $cliente->nss()->delete();
+            foreach ($validated['nss'] as $nssItem) {
+                if (!empty($nssItem['nss'])) {
+                    $cliente->nss()->create([
+                        'nss' => $nssItem['nss'],
+                        'es_principal' => $nssItem['es_principal'] ?? false
+                    ]);
+                }
+            }
+        }
+
+		// ✅ CONTACTOS - Guardado CORRECTO
+		if ($request->has('contactos')) {
+			$cliente->contactos()->delete();
+			foreach ($validated['contactos'] as $contacto) {
+				if (!empty($contacto['valor']) && !empty($contacto['tipo_contacto_id'])) {
+					$cliente->contactos()->create([
+						'tipo_contacto_id' => $contacto['tipo_contacto_id'],  // ✅ BIEN
+						'valor' => $contacto['valor'],
+						'es_principal' => $contacto['es_principal'] ?? false
+					]);
+				}
+			}
+		}
+
+        DB::commit();
+
+        return redirect()->route('clientes.edit', $cliente)
+            ->with('success', '✅ Cliente actualizado correctamente.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error al actualizar cliente: ' . $e->getMessage());
+        
+        // 🚨 Si el error es por duplicado, mostrar mensaje amigable
+        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+            if (strpos($e->getMessage(), 'cliente_curps') !== false) {
+                return back()->withInput()->with('error', '❌ La CURP ya está registrada para otro cliente.');
+            }
+            if (strpos($e->getMessage(), 'cliente_rfcs') !== false) {
+                return back()->withInput()->with('error', '❌ El RFC ya está registrado para otro cliente.');
+            }
+            if (strpos($e->getMessage(), 'cliente_nsss') !== false) {
+                return back()->withInput()->with('error', '❌ El NSS ya está registrado para otro cliente.');
+            }
+        }
+        
+        return back()
+            ->withInput()
+            ->with('error', '❌ Error al actualizar el cliente: ' . $e->getMessage());
+    }
+}
 
     /**
      * Remove the specified resource from storage.
@@ -1143,114 +1324,53 @@ public function estadisticas()
         ]);
     }
 
-    /**
-     * Manejar NSS del cliente (CORREGIDO - eliminación REAL)
-     */
-    private function manejarNssCorregido(Cliente $cliente, Request $request)
-    {
-        // Obtener todos los NSS actuales del cliente
-        $nssActuales = $cliente->nss()->get();
-        
-        // Arrays para control
-        $nssMantener = [];
-        $nssEliminar = $nssActuales->pluck('id')->toArray();
-        
-        // 1. NSS principal (obligatorio)
-        if ($request->filled('nss')) {
-            $nssPrincipal = $nssActuales->where('nss', $request->nss)->first();
-            
-            if ($nssPrincipal) {
-                // Ya existe, actualizar y mantener
-                $nssPrincipal->update(['es_principal' => true]);
-                $nssMantener[] = $nssPrincipal->id;
-                $nssEliminar = array_diff($nssEliminar, [$nssPrincipal->id]);
-            } else {
-                // Crear nuevo NSS principal
-                $nuevoNss = ClienteNss::create([
-                    'cliente_id' => $cliente->id,
-                    'nss' => $request->nss,
-                    'es_principal' => true
-                ]);
-                $nssMantener[] = $nuevoNss->id;
+private function manejarNssCorregido(Cliente $cliente, Request $request)
+{
+    // Obtener todos los NSS actuales
+    $nssActuales = $cliente->nss()->get();
+    $nssEliminar = $nssActuales->pluck('id')->toArray();
+    $nssMantener = [];
+
+    // Recorrer los NSS enviados desde el formulario
+    if ($request->filled('nss') && is_array($request->nss)) {
+        foreach ($request->nss as $nssItem) {
+            if (!empty($nssItem['nss'])) {
+                $esPrincipal = isset($nssItem['es_principal']) ? $nssItem['es_principal'] : 0;
+
+                // Buscar si ya existe
+                $nssExistente = $nssActuales->where('nss', $nssItem['nss'])->first();
+
+                if ($nssExistente) {
+                    // Actualizar flag principal
+                    $nssExistente->update(['es_principal' => $esPrincipal]);
+                    $nssMantener[] = $nssExistente->id;
+                    $nssEliminar = array_diff($nssEliminar, [$nssExistente->id]);
+                } else {
+                    // Crear nuevo NSS
+                    $nuevoNss = ClienteNss::create([
+                        'cliente_id' => $cliente->id,
+                        'nss' => $nssItem['nss'],
+                        'es_principal' => $esPrincipal
+                    ]);
+                    $nssMantener[] = $nuevoNss->id;
+                }
             }
         }
-        
-        // 2. NSS2 (opcional)
-        if ($request->filled('nss2')) {
-            $nss2 = $nssActuales->where('nss', $request->nss2)->first();
-            
-            if ($nss2) {
-                // Ya existe, asegurar que NO sea principal y mantener
-                $nss2->update(['es_principal' => false]);
-                $nssMantener[] = $nss2->id;
-                $nssEliminar = array_diff($nssEliminar, [$nss2->id]);
-            } else {
-                // Crear nuevo NSS secundario
-                $nuevoNss2 = ClienteNss::create([
-                    'cliente_id' => $cliente->id,
-                    'nss' => $request->nss2,
-                    'es_principal' => false
-                ]);
-                $nssMantener[] = $nuevoNss2->id;
-            }
-        }
-        
-        // 3. NSS3 (opcional)
-        if ($request->filled('nss3')) {
-            $nss3 = $nssActuales->where('nss', $request->nss3)->first();
-            
-            if ($nss3) {
-                // Ya existe, asegurar que NO sea principal y mantener
-                $nss3->update(['es_principal' => false]);
-                $nssMantener[] = $nss3->id;
-                $nssEliminar = array_diff($nssEliminar, [$nss3->id]);
-            } else {
-                // Crear nuevo NSS secundario
-                $nuevoNss3 = ClienteNss::create([
-                    'cliente_id' => $cliente->id,
-                    'nss' => $request->nss3,
-                    'es_principal' => false
-                ]);
-                $nssMantener[] = $nuevoNss3->id;
-            }
-        }
-        
-        // 4. NSS4 (opcional)
-        if ($request->filled('nss4')) {
-            $nss4 = $nssActuales->where('nss', $request->nss4)->first();
-            
-            if ($nss4) {
-                // Ya existe, asegurar que NO sea principal y mantener
-                $nss4->update(['es_principal' => false]);
-                $nssMantener[] = $nss4->id;
-                $nssEliminar = array_diff($nssEliminar, [$nss4->id]);
-            } else {
-                // Crear nuevo NSS secundario
-                $nuevoNss4 = ClienteNss::create([
-                    'cliente_id' => $cliente->id,
-                    'nss' => $request->nss4,
-                    'es_principal' => false
-                ]);
-                $nssMantener[] = $nuevoNss4->id;
-            }
-        }
-        
-        // 5. Eliminar NSS que ya no se necesitan (ELIMINACIÓN REAL)
-        if (!empty($nssEliminar)) {
-            ClienteNss::whereIn('id', $nssEliminar)->delete();
-        }
-        
-        // Log de la operación
-        Log::info('NSS actualizados para cliente', [
-            'cliente_id' => $cliente->id,
-            'nss_mantenidos' => $nssMantener,
-            'nss_eliminados' => $nssEliminar,
-            'nss_principal' => $request->nss,
-            'nss2' => $request->nss2,
-            'nss3' => $request->nss3,
-            'nss4' => $request->nss4
-        ]);
     }
+
+    // Eliminar NSS que ya no están en el formulario
+    if (!empty($nssEliminar)) {
+        ClienteNss::whereIn('id', $nssEliminar)->delete();
+    }
+
+    // Logging
+    Log::info('NSS actualizados para cliente', [
+        'cliente_id' => $cliente->id,
+        'nss_mantenidos' => $nssMantener,
+        'nss_eliminados' => $nssEliminar,
+    ]);
+}
+
 
     /**
      * Manejar contactos del cliente (CORREGIDO - eliminación REAL)
