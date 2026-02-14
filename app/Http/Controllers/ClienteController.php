@@ -8,6 +8,7 @@ use App\Models\CatalogoEstatusCliente;
 use App\Models\CatalogoInstituto;
 use App\Models\CatalogoRegimen;
 use App\Models\CatalogoTramite;
+use App\Models\CatalogoTramiteIssste;
 use App\Models\CatalogoModalidad;
 use App\Models\CatalogoTiposContacto;
 use App\Models\ClienteCurp;
@@ -280,26 +281,57 @@ if ($request->filled('estatus') && $request->estatus !== 'todos') {
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        // Cargar datos necesarios
-        $institutos = CatalogoInstituto::where('activo', true)->get();
-        $regimenes = CatalogoRegimen::all();
-        $tramites = CatalogoTramite::where('activo', true)->get();
-        $modalidades = CatalogoModalidad::where('activo', true)->get();
-        
-        // Clientes para referencia
-        $clientesReferencia = Cliente::select('id', 'no_cliente', 'nombre', 'apellido_paterno', 'apellido_materno')
-            ->where('tipo_cliente', 'C') // Solo clientes activos
-            ->orderBy('nombre')
-            ->get()
-            ->map(function($cliente) {
-                $cliente->nombre_completo = "{$cliente->no_cliente} - {$cliente->nombre} {$cliente->apellido_paterno} {$cliente->apellido_materno}";
-                return $cliente;
-            });
-        
-        return view('clientes.create', compact('institutos', 'regimenes', 'tramites', 'modalidades', 'clientesReferencia'));
-    }
+public function create()
+{
+    // Cargar datos necesarios
+    $institutos = CatalogoInstituto::where('activo', true)->get();
+    $regimenes = CatalogoRegimen::where('activo', true)->get();
+    $tramites = CatalogoTramite::where('activo', true)->get();
+    $modalidades = CatalogoModalidad::where('activo', true)->get();
+
+    // 🔥 Modalidades IMSS (necesario para selects anidados)
+    $modalidadesImss = CatalogoModalidad::where('activo', true)
+        ->whereIn('codigo', ['NA','M10','M40'])
+        ->get();
+
+    // 🔥 Modalidades ISSSTE
+    $modalidadesIssste = CatalogoModalidad::where('activo', true)
+        ->whereIn('codigo', ['NA','CV'])
+        ->get();
+
+    // 🔥 Tabla pivote para selects anidados
+    $combinaciones = DB::table('catalogo_modalidad_regimen_tramite')
+        ->whereNull('deleted_at')
+        ->where('activo', 1)
+        ->get([
+            'instituto_codigo',
+            'regimen_codigo',
+            'tramite_codigo',
+            'modalidad_codigo'
+        ]);
+
+    // Clientes para referencia
+    $clientesReferencia = Cliente::select('id', 'no_cliente', 'nombre', 'apellido_paterno', 'apellido_materno')
+        ->where('tipo_cliente', 'C')
+        ->orderBy('nombre')
+        ->get()
+        ->map(function($cliente) {
+            $cliente->nombre_completo = "{$cliente->no_cliente} - {$cliente->nombre} {$cliente->apellido_paterno} {$cliente->apellido_materno}";
+            return $cliente;
+        });
+
+    return view('clientes.create', compact(
+        'institutos',
+        'regimenes',
+        'tramites',
+        'modalidades',
+        'modalidadesImss',
+        'modalidadesIssste',
+        'clientesReferencia',
+        'combinaciones'
+    ));
+}
+
 
     /**
      * Store a newly created resource in storage.
@@ -417,30 +449,62 @@ public function show(Cliente $cliente)
      */
 public function edit(Cliente $cliente)
 {
-    // Evitar edición de clientes eliminados
     if ($cliente->deleted_at) {
         return redirect()->route('clientes.index')
             ->with('error', 'No se puede editar un cliente eliminado.');
     }
 
-    // Solo clientes tipo 'C'
     if ($cliente->tipo_cliente !== 'C') {
         return redirect()->route('clientes.show', $cliente)
             ->with('warning', 'Solo los clientes tipo "Cliente" pueden ser editados completamente.');
     }
 
     // Catálogos
-    $institutos = CatalogoInstituto::where('activo', true)->get();
-    $regimenes = CatalogoRegimen::where('activo', true)->get();
+    //$institutos = CatalogoInstituto::where('activo', true)->get();
+    //$regimenes = CatalogoRegimen::where('activo', true)->get();
     $tramites = CatalogoTramite::where('activo', true)->get();
+    $tramitesISSSTE = CatalogoTramiteIssste::where('activo', true)->get();
     $estatuses = CatalogoEstatusCliente::where('activo', true)->orderBy('orden')->get();
     $tiposContacto = CatalogoTiposContacto::where('activo', true)->orderBy('orden')->get();
 
-    // Modalidades
-    $modalidadesImss = CatalogoModalidad::where('activo', true)->whereIn('codigo', ['NA','M10','M40'])->get();
-    $modalidadesIssste = CatalogoModalidad::where('activo', true)->whereIn('codigo', ['NA','CV'])->get();
+    $regimenes = CatalogoRegimen::where('activo', true)
+        ->whereIn('codigo', ['R73','R97'])
+        ->get();
 
-    // Clientes para referencia (sin incluir al cliente actual)
+    $regimenesISSSTE = CatalogoRegimen::where('activo', true)
+        ->whereIn('codigo', ['DT','CI'])
+        ->get();
+
+    $institutos = CatalogoInstituto::where('activo', true)
+        ->whereIn('codigo', ['INA','IMS'])
+        ->get();
+
+    $institutosISSSTE = CatalogoInstituto::where('activo', true)
+        ->whereIn('codigo', ['INA','IST'])
+        ->get();
+		
+    // Modalidades IMSS
+    $modalidadesImss = CatalogoModalidad::where('activo', true)
+        ->whereIn('codigo', ['MNA','M10','M40'])
+        ->get();
+
+    // Modalidades ISSSTE
+    $modalidadesIssste = CatalogoModalidad::where('activo', true)
+        ->whereIn('codigo', ['MNA','MCV'])
+        ->get();
+
+    // 🔥 Tabla pivote para selects anidados
+    $combinaciones = DB::table('catalogo_modalidad_regimen_tramite')
+        ->whereNull('deleted_at')
+        ->where('activo', 1)
+        ->get([
+            'instituto_codigo',
+            'regimen_codigo',
+            'tramite_codigo',
+            'modalidad_codigo'
+        ]);
+
+    // Clientes referencia
     $clientesReferencia = Cliente::select('id','no_cliente','nombre','apellido_paterno','apellido_materno')
         ->where('id','!=',$cliente->id)
         ->orderBy('nombre')
@@ -453,21 +517,20 @@ public function edit(Cliente $cliente)
     // Cargar relaciones
     $cliente->load(['curps','rfcs','nss','contactos']);
 
-    // ✅ CORREGIDO: Enviar arrays con estructura completa (incluye es_principal)
     $curps = $cliente->curps->map(function($item) {
         return [
             'curp' => $item->curp,
             'es_principal' => $item->es_principal
         ];
     })->toArray();
-    
+
     $rfcs = $cliente->rfcs->map(function($item) {
         return [
             'rfc' => $item->rfc,
             'es_principal' => $item->es_principal
         ];
     })->toArray();
-    
+
     $nss = $cliente->nss->map(function($item) {
         return [
             'nss' => $item->nss,
@@ -475,22 +538,24 @@ public function edit(Cliente $cliente)
         ];
     })->toArray();
 
-	// ✅ CONTACTOS - Versión CORREGIDA
-	$contactos = [];
-	foreach ($cliente->contactos as $index => $contacto) {
-		$contactos[] = [
-			'id' => $contacto->id,
-			'tipo_contacto_id' => $contacto->tipo_contacto_id,  // ✅ AHORA SÍ
-			'valor' => $contacto->valor,
-			'es_principal' => $contacto->es_principal
-		];
-	}
+    $contactos = [];
+    foreach ($cliente->contactos as $contacto) {
+        $contactos[] = [
+            'id' => $contacto->id,
+            'tipo_contacto_id' => $contacto->tipo_contacto_id,
+            'valor' => $contacto->valor,
+            'es_principal' => $contacto->es_principal
+        ];
+    }
 
     return view('clientes.edit', compact(
         'cliente',
         'institutos',
+        'institutosISSSTE',
         'regimenes',
+        'regimenesISSSTE',
         'tramites',
+        'tramitesISSSTE',
         'estatuses',
         'tiposContacto',
         'modalidadesImss',
@@ -499,9 +564,11 @@ public function edit(Cliente $cliente)
         'curps',
         'rfcs',
         'nss',
-        'contactos'
+        'contactos',
+        'combinaciones'
     ));
 }
+
 
 
 
@@ -611,7 +678,7 @@ public function update(Request $request, Cliente $cliente)
         'instituto2_id' => 'nullable|exists:catalogo_institutos,id',
         'regimen2_id' => 'nullable|exists:catalogo_regimenes,id',
         'tramite2_id' => 'nullable|exists:catalogo_tramites,id',
-        'modalidad_issste' => 'nullable|string|max:10',
+        'modalidad2_id' => 'nullable|string|max:10',
         'anios_servicio_issste' => 'nullable|integer',
         'fecha_alta_issste' => 'nullable|date',
         'fecha_baja_issste' => 'nullable|date',
@@ -667,7 +734,7 @@ public function update(Request $request, Cliente $cliente)
             'instituto2_id' => $validated['instituto2_id'] ?? null,
             'regimen2_id' => $validated['regimen2_id'] ?? null,
             'tramite2_id' => $validated['tramite2_id'] ?? null,
-            'modalidad2_id' => $validated['modalidad_issste'] ?? null,
+            'modalidad2_id' => $validated['modalidad2_id'] ?? null,
             'anios_servicio_issste' => $validated['anios_servicio_issste'] ?? null,
             'fecha_alta_issste' => $validated['fecha_alta_issste'] ?? null,
             'fecha_baja_issste' => $validated['fecha_baja_issste'] ?? null,
