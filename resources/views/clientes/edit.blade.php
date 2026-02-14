@@ -39,48 +39,54 @@
             </h5>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label"><strong>No. Cliente:</strong></label>
-                    <p class="form-control-plaintext">{{ $cliente->no_cliente ?? 'N/A' }}</p>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <label class="form-label"><strong>Cliente desde:</strong></label>
-                    <p class="form-control-plaintext">
-                        {{ $cliente->fecha_contrato ? $cliente->fecha_contrato->format('d/m/Y') : 'N/A' }}
-                    </p>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <label class="form-label"><strong>Fecha Captura:</strong></label>
-                    <p class="form-control-plaintext">
-                        {{ $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : 'N/A' }}
-                    </p>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <label class="form-label"><strong>Última actualización:</strong></label>
-                    <p class="form-control-plaintext">
-                        {{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
-                    </p>
-                </div>
-
-				<!-- Tipo de Cliente: mostrar nombre desde catalogo -->
-                <div class="col-md-3 mb-3">
-                    <label class="form-label"><strong>Tipo de Cliente:</strong></label>
-                    <p class="form-control-plaintext">
-                        {{ $cliente->tipo_cliente == 'C' ? 'Cliente' : '' }}
-                    </p>
-                </div>
-
+			<div class="row">
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>No. Cliente:</strong></label>
+					<p class="form-control-plaintext">{{ $cliente->no_cliente ?? 'N/A' }}</p>
+				</div>
+				
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>Estatus:</strong></label>
+					<p class="form-control-plaintext">
+						{{ $cliente->estatusCliente->nombre ?? 'N/A' }}
+					</p>
+				</div>
+				
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>Tipo de Cliente:</strong></label>
+					<p class="form-control-plaintext">
+						{{ $cliente->tipo_cliente == 'C' ? 'Cliente' : '' }}
+					</p>
+				</div>
+				
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>Cliente desde:</strong></label>
+					<p class="form-control-plaintext">
+						{{ $cliente->fecha_contrato ? $cliente->fecha_contrato->format('d/m/Y') : 'N/A' }}
+					</p>
+				</div>
+				
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>Fecha Captura:</strong></label>
+					<p class="form-control-plaintext">
+						{{ $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : 'N/A' }}
+					</p>
+				</div>
+				
+				<div class="col-md-2 mb-2">
+					<label class="form-label"><strong>Última actualización:</strong></label>
+					<p class="form-control-plaintext">
+						{{ $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i') : 'N/A' }}
+					</p>
+				</div>
+			</div>
 				
             <!-- Datos que se pueden editar -->
             <h6 class="mt-3 mb-3 text-primary">Datos que se pueden editar (los que llevan * son obligatorios):</h6>
             
             <div class="row">
 				<!-- Estatus: cargado desde catalogo_estatus_clientes -->
-				<div class="col-md-3 mb-3">
+				<div class="col-md-2 mb-3">
 					<label for="estatus_cliente_id" class="form-label">
 						Estatus actual <span class="text-danger">*</span>
 					</label>
@@ -149,77 +155,95 @@
             </div>
         </div>
 
-<!-- ==================== CURPs DINÁMICOS ==================== -->
-<h6 class="mb-2">CURPs</h6>
-<div id="curps-container">
-    @foreach($curps as $i => $curpItem)
-    <div class="row curp-item mb-3">
-        <div class="col-md-4">
-            <label for="curp{{ $i }}" class="form-label">CURP *</label>
-            <input type="text" id="curp{{ $i }}" name="curps[{{ $i }}][curp]" class="form-control curp-input"
-                   required maxlength="18" pattern="[A-Z0-9]{18}" placeholder="18 caracteres"
-                   value="{{ old('curps.'.$i.'.curp', is_array($curpItem) ? $curpItem['curp'] : $curpItem) }}">
-            <div class="invalid-feedback" id="curp{{ $i }}-error"></div>
+
+<!-- ==================== CURP Y RFC DINÁMICOS EN LA MISMA FILA ==================== -->
+<div class="row">
+    <!-- COLUMNA IZQUIERDA: CURPs -->
+    <div class="col-md-6">
+        <h6 class="mb-2">CURPs</h6>
+        <div id="curps-container">
+            @if(!empty($curps))
+                @foreach($curps as $i => $curpItem)
+                <div class="row curp-item mb-2" id="curp-row-{{ $i }}">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <label for="curp{{ $i }}" class="form-label">CURP *</label>
+                                <input type="text" id="curp{{ $i }}" name="curps[{{ $i }}][curp]" class="form-control curp-input"
+                                       required maxlength="18" pattern="[A-Z0-9]{18}" placeholder="18 caracteres"
+                                       value="{{ old('curps.'.$i.'.curp', is_array($curpItem) ? $curpItem['curp'] : $curpItem) }}">
+                                <div class="invalid-feedback" id="curp{{ $i }}-error"></div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input type="checkbox" id="curp{{ $i }}-principal" name="curps[{{ $i }}][es_principal]" class="form-check-input" value="1"
+                                        {{ old('curps.'.$i.'.es_principal', is_array($curpItem) ? ($curpItem['es_principal'] ?? false) : ($i === 0 ? 1 : 0)) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="curp{{ $i }}-principal">Principal</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger btn-sm eliminar-curp">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            @endif
         </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <div class="form-check">
-                <input type="checkbox" id="curp{{ $i }}-principal" name="curps[{{ $i }}][es_principal]" class="form-check-input" value="1"
-                    {{ old('curps.'.$i.'.es_principal', is_array($curpItem) ? ($curpItem['es_principal'] ?? false) : ($i === 0 ? 1 : 0)) ? 'checked' : '' }}>
-                <label class="form-check-label" for="curp{{ $i }}-principal">Principal</label>
-            </div>
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="button" class="btn btn-danger btn-sm eliminar-curp">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    </div>
-    @endforeach
-</div>
 
         <button type="button" id="agregar-curp" class="btn btn-primary btn-sm mb-3">
             <i class="fas fa-plus"></i> Agregar CURP
         </button>
+    </div>
 
-        <!-- ==================== RFC DINÁMICOS ==================== -->
+    <!-- COLUMNA DERECHA: RFCs -->
+    <div class="col-md-6">
         <h6 class="mb-2">RFCs</h6>
         <div id="rfcs-container">
             @if(!empty($rfcs))
-@foreach($rfcs as $i => $rfcItem)
-<div class="row rfc-item mb-3">
-    <div class="col-md-3 mb-3">
-        <label for="rfc{{ $i }}" class="form-label">RFC <span class="text-danger">*</span></label>
-        <input type="text" id="rfc{{ $i }}" 
-               name="rfcs[{{ $i }}][rfc]" 
-               class="form-control rfc-input" 
-               value="{{ old('rfcs.'.$i.'.rfc', is_array($rfcItem) ? $rfcItem['rfc'] : $rfcItem) }}" 
-               maxlength="13" required>
-        <div class="invalid-feedback" id="rfc{{ $i }}-error"></div>
-    </div>
-    <div class="col-md-3 d-flex align-items-end">
-        <div class="form-check">
-            <input type="checkbox" 
-                   id="rfc{{ $i }}-principal" 
-                   name="rfcs[{{ $i }}][es_principal]" 
-                   class="form-check-input" 
-                   value="1"
-                   {{ old('rfcs.'.$i.'.es_principal', is_array($rfcItem) && ($rfcItem['es_principal'] ?? false)) ? 'checked' : '' }}>
-            <label class="form-check-label" for="rfc{{ $i }}-principal">Principal</label>
-        </div>
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-        <button type="button" class="btn btn-danger btn-sm eliminar-rfc">
-            <i class="fas fa-trash"></i>
-        </button>
-    </div>
-</div>
-@endforeach
+                @foreach($rfcs as $i => $rfcItem)
+                <div class="row rfc-item mb-2" id="rfc-row-{{ $i }}">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <label for="rfc{{ $i }}" class="form-label">RFC <span class="text-danger">*</span></label>
+                                <input type="text" id="rfc{{ $i }}" 
+                                       name="rfcs[{{ $i }}][rfc]" 
+                                       class="form-control rfc-input" 
+                                       value="{{ old('rfcs.'.$i.'.rfc', is_array($rfcItem) ? $rfcItem['rfc'] : $rfcItem) }}" 
+                                       maxlength="13" required>
+                                <div class="invalid-feedback" id="rfc{{ $i }}-error"></div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input type="checkbox" 
+                                           id="rfc{{ $i }}-principal" 
+                                           name="rfcs[{{ $i }}][es_principal]" 
+                                           class="form-check-input" 
+                                           value="1"
+                                           {{ old('rfcs.'.$i.'.es_principal', is_array($rfcItem) && ($rfcItem['es_principal'] ?? false)) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="rfc{{ $i }}-principal">Principal</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger btn-sm eliminar-rfc">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
             @endif
         </div>
 
         <button type="button" class="btn btn-primary mb-3" id="agregar-rfc">
             <i class="fas fa-plus"></i> Agregar RFC
         </button>
+    </div>
+</div>
 
         <!-- Fecha Contrato y Referencia -->
         <div class="row mb-3">
@@ -281,14 +305,14 @@
                 value="{{ old('contactos.'.$i.'.valor', $contacto['valor'] ?? '') }}">
             <div class="invalid-feedback"></div>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
+        <div class="col-md-1 d-flex align-items-end">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="contactos[{{ $i }}][es_principal]" value="1"
                     {{ old('contactos.'.$i.'.es_principal', $contacto['es_principal'] ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label">Principal</label>
             </div>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
+        <div class="col-md-1 d-flex align-items-end">
             <button type="button" class="btn btn-danger btn-sm eliminar-contacto">
                 <i class="fas fa-trash"></i>
             </button>
@@ -361,7 +385,7 @@
             <div class="col-md-3 mb-3">
                 <label for="regimen_id" class="form-label">Régimen <span class="text-danger">*</span></label>
                 <select class="form-select @error('regimen_id') is-invalid @enderror" 
-                        id="regimen_id" name="regimen_id" required>
+                        id="regimen_id" name="regimen_id">
                     <option value="">Seleccionar...</option>
                     @foreach($regimenes ?? [] as $regimen)
                         <option value="{{ $regimen->id }}" 
@@ -376,7 +400,7 @@
             <div class="col-md-3 mb-3">
                 <label for="tramite_id" class="form-label">Trámite <span class="text-danger">*</span></label>
                 <select class="form-select @error('tramite_id') is-invalid @enderror" 
-                        id="tramite_id" name="tramite_id" required>
+                        id="tramite_id" name="tramite_id">
                     <option value="">Seleccionar...</option>
                     @foreach($tramites ?? [] as $tramite)
                         <option value="{{ $tramite->id }}" 
@@ -391,7 +415,7 @@
             <div class="col-md-3 mb-3">
                 <label for="modalidad_id" class="form-label">Modalidad <span class="text-danger">*</span></label>
                 <select class="form-select @error('modalidad_id') is-invalid @enderror" 
-                        id="modalidad_id" name="modalidad_id" required>
+                        id="modalidad_id" name="modalidad_id">
                     <option value="">Seleccionar...</option>
                     @foreach($modalidadesImss ?? [] as $modalidad)
                         <option value="{{ $modalidad->id }}" 
@@ -436,17 +460,17 @@
 <div id="nss-container">
 @foreach($nss as $i => $nssItem)
 <div class="row nss-item mb-3">
-    <div class="col-md-4">
+    <div class="col-md-2">
         <label for="nss{{ $i }}" class="form-label">NSS *</label>
         <input type="text" id="nss{{ $i }}" 
                name="nss[{{ $i }}][nss]" 
                class="form-control nss-input" 
-               required maxlength="11" pattern="\d{11}" 
+               maxlength="11" pattern="\d{11}" 
                placeholder="11 dígitos"
                value="{{ old('nss.'.$i.'.nss', is_array($nssItem) ? $nssItem['nss'] : $nssItem) }}">
         <div class="invalid-feedback" id="nss{{ $i }}-error"></div>
     </div>
-    <div class="col-md-3 d-flex align-items-end">
+    <div class="col-md-1 d-flex align-items-end">
         <div class="form-check">
             <input type="checkbox" 
                    id="nss{{ $i }}-principal" 
@@ -457,7 +481,7 @@
             <label class="form-check-label" for="nss{{ $i }}-principal">Principal</label>
         </div>
     </div>
-    <div class="col-md-2 d-flex align-items-end">
+    <div class="col-md-1 d-flex align-items-end">
         <button type="button" class="btn btn-danger btn-sm eliminar-nss">
             <i class="fas fa-trash"></i>
         </button>
@@ -485,39 +509,44 @@
     <div class="card-body">
         <div class="row mb-3">
             <div class="col-md-3 mb-3">
-                <label for="instituto2_id" class="form-label">Institución2*</label>
-                <select class="form-select" id="instituto2_id" name="instituto2_id">
+                <label for="instituto2_id" class="form-label">Institución 2<span class="text-danger">*</span></label>
+                <select class="form-select @error('instituto2_id') is-invalid @enderror" id="instituto2_id" name="instituto2_id" required>
                     <option value="">Seleccionar...</option>
-                    <option value="NA">N/A</option>
-                    @foreach($institutos ?? [] as $instituto)
-                        @if(in_array($instituto->codigo, ['IST']))
-                            <option value="{{ $instituto->id }}" {{ old('instituto2_id', $cliente->instituto2_id) == $instituto->id ? 'selected' : '' }}>
-                                {{ $instituto->nombre }}
-                            </option>
-                        @endif
+                    @foreach($institutosISSSTE ?? [] as $instituto)
+                        <option value="{{ $instituto->id }}" 
+                            {{ old('instituto2_id', $cliente->instituto2_id) == $instituto->id ? 'selected' : '' }}>
+                            {{ $instituto->nombre }}
+                        </option>
                     @endforeach
                 </select>
+                @error('instituto2_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+			
+			
+			
+			
+            <div class="col-md-3 mb-3">
+                <label for="regimen2_id" class="form-label">Régimen 2<span class="text-danger">*</span></label>
+                <select class="form-select @error('regimen2_id') is-invalid @enderror" id="regimen2_id" name="regimen2_id">
+                    <option value="">Seleccionar...</option>
+                    @foreach($regimenesISSSTE ?? [] as $regimen)
+                        <option value="{{ $regimen->id }}" 
+                            {{ old('regimen2_id', $cliente->regimen2_id) == $regimen->id ? 'selected' : '' }}>
+                            {{ $regimen->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('regimen2_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
-            <div class="col-md-3 mb-3">
-                <label for="regimen2_id" class="form-label">Régimen2*</label>
-                <select class="form-select" id="regimen2_id" name="regimen2_id" disabled>
-                    <option value="">Seleccionar...</option>
-                    @foreach($regimenes ?? [] as $regimen)
-                        @if($regimen->instituto_id == 14) <!-- ISSSTE id -->
-                            <option value="{{ $regimen->id }}" {{ old('regimen2_id', $cliente->regimen2_id) == $regimen->id ? 'selected' : '' }}>
-                                {{ $regimen->nombre }}
-                            </option>
-                        @endif
-                    @endforeach
-                </select>
-            </div>
+
+
 
             <div class="col-md-3 mb-3">
                 <label for="tramite2_id" class="form-label">Trámite2*</label>
-                <select class="form-select" id="tramite2_id" name="tramite2_id" disabled>
+                <select class="form-select" id="tramite2_id" name="tramite2_id">
                     <option value="">Seleccionar...</option>
-                    @foreach($tramites ?? [] as $tramite)
+                    @foreach($tramitesISSSTE ?? [] as $tramite)
                         <option value="{{ $tramite->id }}" {{ old('tramite2_id', $cliente->tramite2_id) == $tramite->id ? 'selected' : '' }}>
                             {{ $tramite->nombre }}
                         </option>
@@ -526,11 +555,11 @@
             </div>
 
             <div class="col-md-3 mb-3">
-                <label for="modalidad_issste" class="form-label">Modalidad2*</label>
-                <select class="form-select" id="modalidad_issste" name="modalidad_issste" disabled>
+                <label for="modalidad2_id" class="form-label">Modalidad2*</label>
+                <select class="form-select" id="modalidad2_id" name="modalidad2_id">
                     <option value="">Seleccionar...</option>
                     @foreach($modalidadesIssste ?? [] as $modalidad)
-                        <option value="{{ $modalidad->codigo }}" {{ old('modalidad_issste', $cliente->modalidad_issste) == $modalidad->codigo ? 'selected' : '' }}>
+                        <option value="{{ $modalidad->id }}" {{ old('modalidad2_id', $cliente->modalidad2_id) == $modalidad->id ? 'selected' : '' }}>
                             {{ $modalidad->nombre }}
                         </option>
                     @endforeach
@@ -541,20 +570,25 @@
         <div class="row mb-3">
             <div class="col-md-3 mb-3">
                 <label for="anios_servicio_issste" class="form-label">Años de Servicio</label>
-                <input type="number" class="form-control" id="anios_servicio_issste" name="anios_servicio_issste" min="0" disabled>
+                <input type="number" class="form-control @error('anios_servicio_issste') is-invalid @enderror" 
+                       id="anios_servicio_issste" name="anios_servicio_issste" 
+                       value="{{ old('anios_servicio_issste', $cliente->anios_servicio_issste) }}" min="0">
+                @error('anios_servicio_issste') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
+
             <div class="col-md-3 mb-3">
                 <label for="fecha_alta_issste" class="form-label">Fecha Alta</label>
-                <input type="date" class="form-control" id="fecha_alta_issste" name="fecha_alta_issste" disabled>
+                <input type="date" class="form-control" id="fecha_alta_issste" name="fecha_alta_issste">
             </div>
             <div class="col-md-3 mb-3">
                 <label for="fecha_baja_issste" class="form-label">Fecha Baja</label>
-                <input type="date" class="form-control" id="fecha_baja_issste" name="fecha_baja_issste" disabled>
+                <input type="date" class="form-control" id="fecha_baja_issste" name="fecha_baja_issste">
             </div>
             <div class="col-md-3 mb-3">
-                <label for="nss_issste" class="form-label">NSS ISSSTE*</label>
-                <input type="text" class="form-control" id="nss_issste" name="nss_issste" maxlength="11" placeholder="11 dígitos" disabled>
-                <div class="invalid-feedback" id="nss_issste-error"></div>
+                <label for="nss_issste" class="form-label">NSS ISSSTE *</label>
+                <input type="number" class="form-control @error('nss_issste') is-invalid @enderror" id="nss_issste" name="nss_issste"  maxlength="11" placeholder="11 dígitos"
+                       value="{{ old('nss_issste', $cliente->nss_issste) }}" min="0">
+                @error('nss_issste') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
         </div>
     </div>
@@ -690,57 +724,71 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ==================== VARIABLES GENERALES ====================
-    const form = document.querySelector('form');
+    // ==================== FUNCIÓN CAMPOS INSTITUCIONES ====================
+    function toggleInstitucionFields() {
+        const instituto = document.getElementById('instituto_id');
+        const instituto2 = document.getElementById('instituto2_id');
 
-    // ----- ISSSTE -----
-    const instituto2 = document.getElementById('instituto2_id');
-    const regimen2 = document.getElementById('regimen2_id');
-    const tramite2 = document.getElementById('tramite2_id');
-    const modalidad2 = document.getElementById('modalidad_issste');
-    const anios2 = document.getElementById('anios_servicio_issste');
-    const fechaAlta2 = document.getElementById('fecha_alta_issste');
-    const fechaBaja2 = document.getElementById('fecha_baja_issste');
-    const nss2 = document.getElementById('nss_issste');
+        // Campos IMSS
+        const imssFields = [
+            'tramite_id', 'regimen_id', 'modalidad_id',
+            'semanas_imss', 'fecha_alta', 'fecha_baja'
+        ];
 
-    // ==================== FUNCIONES ISSSTE ====================
-    function toggleCamposISSSTE() {
-        const esISSSTE = instituto2?.value && instituto2.value !== 'NA' && instituto2.value !== '';
-        [regimen2, tramite2, modalidad2, anios2, fechaAlta2, fechaBaja2, nss2].forEach(el => {
-            if (!el) return;
-            el.disabled = !esISSSTE;
-            if (!esISSSTE) {
-                el.value = '';
-                el.classList.remove('is-invalid');
-                if (el.nextElementSibling) el.nextElementSibling.innerText = '';
-            }
-        });
-    }
+        // Campos ISSSTE
+        const isssteFields = [
+            'tramite2_id', 'regimen2_id', 'modalidad2_id',
+            'anios_servicio_issste', 'nss_issste',
+            'fecha_alta_issste', 'fecha_baja_issste'
+        ];
 
-    function validarNSSISSSTE() {
-        if (!nss2) return true;
-        if (nss2.disabled) return true;
-        const val = nss2.value.trim();
-        nss2.classList.remove('is-invalid');
-        const errorDiv = document.getElementById('nss_issste-error');
-        if (!/^\d{11}$/.test(val)) {
-            nss2.classList.add('is-invalid');
-            if (errorDiv) errorDiv.innerText = 'NSS obligatorio: 11 dígitos numéricos';
-            return false;
-        } else {
-            if (errorDiv) errorDiv.innerText = '';
-            return true;
+        // IMSS
+        if (instituto && instituto.value === 'NA') {
+            imssFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.disabled = true;
+                    field.removeAttribute('required');
+                }
+            });
+        } else if (instituto && instituto.value === 'IMSS') {
+            imssFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.disabled = false;
+                    field.setAttribute('required', 'required');
+                }
+            });
+        }
+
+        // ISSSTE
+        if (instituto2 && instituto2.value === 'NA') {
+            isssteFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.disabled = true;
+                    field.removeAttribute('required');
+                }
+            });
+        } else if (instituto2 && instituto2.value === 'ISSSTE') {
+            isssteFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.disabled = false;
+                    field.setAttribute('required', 'required');
+                }
+            });
         }
     }
 
-    function validarCamposISSSTE() {
-        let valid = true;
-        if (!regimen2.disabled && !regimen2.value) { regimen2.classList.add('is-invalid'); valid = false; } else { regimen2?.classList.remove('is-invalid'); }
-        if (!tramite2.disabled && !tramite2.value) { tramite2.classList.add('is-invalid'); valid = false; } else { tramite2?.classList.remove('is-invalid'); }
-        if (!modalidad2.disabled && !modalidad2.value) { modalidad2.classList.add('is-invalid'); valid = false; } else { modalidad2?.classList.remove('is-invalid'); }
-        if (!nss2.disabled && !validarNSSISSSTE()) valid = false;
-        return valid;
-    }
+    // Ejecutar al cargar y al cambiar
+    toggleInstitucionFields();
+    document.getElementById('instituto_id')?.addEventListener('change', toggleInstitucionFields);
+    document.getElementById('instituto2_id')?.addEventListener('change', toggleInstitucionFields);
+
+    // ==================== VARIABLES GENERALES ====================
+    const form = document.querySelector('form');
+
 
     // ==================== CONTACTOS DINÁMICOS ====================
     let contactoIndex = document.querySelectorAll('.contacto-item').length;
@@ -764,13 +812,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="text" name="contactos[${contactoIndex}][valor]" class="form-control contacto-valor" required>
                 <div class="invalid-feedback"></div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="contactos[${contactoIndex}][es_principal]" value="1">
                     <label class="form-check-label">Principal</label>
                 </div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <button type="button" class="btn btn-danger btn-sm eliminar-contacto">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -836,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nuevoIndex = nssIndex;
         const html = `
         <div class="row nss-item mb-3">
-            <div class="col-md-4">
+            <div class="col-md-2">
                 <label for="nss${nuevoIndex}" class="form-label">NSS *</label>
                 <input type="text" id="nss${nuevoIndex}" 
                        name="nss[${nuevoIndex}][nss]" 
@@ -845,7 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
                        placeholder="11 dígitos">
                 <div class="invalid-feedback" id="nss${nuevoIndex}-error"></div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <div class="form-check">
                     <input type="checkbox" 
                            id="nss${nuevoIndex}-principal" 
@@ -855,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="form-check-label" for="nss${nuevoIndex}-principal">Principal</label>
                 </div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <button type="button" class="btn btn-danger btn-sm eliminar-nss">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -896,8 +944,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function agregarCurp() {
         const nuevoIndex = curpIndex;
         const html = `
-        <div class="row curp-item mb-3">
-            <div class="col-md-4">
+        <div class="row curp-item mb-2">
+            <div class="col-md-5">
                 <label for="curp${nuevoIndex}" class="form-label">CURP *</label>
                 <input type="text" id="curp${nuevoIndex}" 
                        name="curps[${nuevoIndex}][curp]" 
@@ -907,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function() {
                        style="text-transform:uppercase">
                 <div class="invalid-feedback" id="curp${nuevoIndex}-error"></div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end">
                 <div class="form-check">
                     <input type="checkbox" 
                            id="curp${nuevoIndex}-principal" 
@@ -917,7 +965,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="form-check-label" for="curp${nuevoIndex}-principal">Principal</label>
                 </div>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <button type="button" class="btn btn-danger btn-sm eliminar-curp">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -961,8 +1009,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function agregarRfc() {
         const nuevoIndex = rfcIndex;
         const html = `
-        <div class="row rfc-item mb-3">
-            <div class="col-md-3 mb-3">
+        <div class="row rfc-item mb-2">
+            <div class="col-md-5 mb-2">
                 <label for="rfc${nuevoIndex}" class="form-label">RFC <span class="text-danger">*</span></label>
                 <input type="text" id="rfc${nuevoIndex}" 
                        name="rfcs[${nuevoIndex}][rfc]" 
@@ -971,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', function() {
                        style="text-transform:uppercase">
                 <div class="invalid-feedback" id="rfc${nuevoIndex}-error"></div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end">
                 <div class="form-check">
                     <input type="checkbox" 
                            id="rfc${nuevoIndex}-principal" 
@@ -1001,6 +1049,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('agregar-rfc')?.addEventListener('click', agregarRfc);
 
+
+
+    // ==================== VALIDACIONES ====================
+    function validarContacto(input) {
+        const item = input.closest('.contacto-item');
+        if (!item) return true;
+        const tipoSelect = item.querySelector('.contacto-tipo');
+        const valorInput = item.querySelector('.contacto-valor');
+        if (!tipoSelect || !tipoSelect.value) return true;
+        const tipo = tipoSelect.options[tipoSelect.selectedIndex]?.text.toLowerCase() || '';
+        let valid = true;
+        valorInput.classList.remove('is-invalid');
+        const errorDiv = valorInput.nextElementSibling;
+        if (errorDiv) errorDiv.innerText = '';
+        const val = valorInput.value.trim();
+        if (tipo.includes('celular') || tipo.includes('telefono')) {
+            if (!/^\d{10,13}$/.test(val)) { 
+                valorInput.classList.add('is-invalid'); 
+                if (errorDiv) errorDiv.innerText = 'Teléfono: 10-13 dígitos.'; 
+                valid = false; 
+            }
+        } else if (tipo.includes('correo')) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+            if (!regex.test(val)) { 
+                valorInput.classList.add('is-invalid'); 
+                if (errorDiv) errorDiv.innerText = 'Correo inválido.'; 
+                valid = false; 
+            }
+        }
+        return valid;
+    }
+	
     // ==================== ELIMINAR ELEMENTOS DINÁMICOS ====================
     document.addEventListener('click', function(e) {
         if (e.target.closest('.eliminar-contacto')) {
@@ -1033,15 +1113,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validarNss()) todosValidos = false;
         if (!validarCurp()) todosValidos = false;
         if (!validarRfc()) todosValidos = false;
-        if (!validarCamposISSSTE()) todosValidos = false;
         if (!todosValidos) e.preventDefault();
     });
 
     // ==================== EVENT LISTENERS INICIALES ====================
-    toggleCamposISSSTE();
-    instituto2?.addEventListener('change', toggleCamposISSSTE);
-    nss2?.addEventListener('input', validarNSSISSSTE);
-    
     document.querySelectorAll('.nss-input').forEach(input => {
         input.addEventListener('input', validarNss);
     });
@@ -1059,6 +1134,9 @@ document.addEventListener('DOMContentLoaded', function() {
             validarRfc();
         });
     });
+
+
+	
 
 });
 </script>
