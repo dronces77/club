@@ -257,7 +257,7 @@ class Cliente extends Model
         // ISSSTE
         'instituto2_id' => 'nullable|exists:catalogo_institutos,id',
         'regimen2_id' => 'nullable|exists:catalogo_regimenes,id',
-        'tramite2_id' => 'nullable|exists:catalogo_tramites,id',
+        'tramite2_id' => 'nullable|exists:catalogo_tramites_issste,id',
         'modalidad2_id' => 'nullable|exists:catalogo_modalidades,id',
         'anios_servicio_issste' => 'nullable|integer|min:0',
         'nss_issste' => 'nullable|digits:11',
