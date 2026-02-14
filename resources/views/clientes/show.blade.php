@@ -57,19 +57,18 @@
                             </span>
                         </p>
                         <p class="mb-2">
-                            <strong>Estatus:</strong> 
+                            <strong>Estatus:</strong>
                             @php
-                                $badgeClass = 'badge-secondary';
-                                if($cliente->estatus == 'Activo') $badgeClass = 'badge-success';
-                                elseif($cliente->estatus == 'Suspendido') $badgeClass = 'badge-warning';
-                                elseif($cliente->estatus == 'Terminado') $badgeClass = 'badge-info';
-                                elseif($cliente->estatus == 'Baja') $badgeClass = 'badge-danger';
+                                $estatusNombre = $cliente->estatusCliente->nombre ?? '';
+								if($estatusNombre == 'Activo') $badgeClass = 'badge-success';
+								elseif($estatusNombre == 'Suspendido') $badgeClass = 'badge-warning';
+								elseif($estatusNombre == 'Terminado') $badgeClass = 'badge-info';
+								elseif($estatusNombre == 'Baja') $badgeClass = 'badge-danger';
+								else $badgeClass = 'badge-secondary';
                             @endphp
-                            <span class="badge {{ $badgeClass }}">
-                                {{ $cliente->estatus }}
-                            </span>
+                            <span class="{{ $badgeClass }}">{{ $cliente->estatusCliente->nombre ?? 'N/A' }}</span>
                         </p>
-                        <p class="mb-0">
+                       <p class="mb-0">
                             <strong>Referencia:</strong> 
                             @if($cliente->referidor)
                                 <a href="{{ route('clientes.show', $cliente->referidor) }}" class="text-decoration-none">
@@ -82,14 +81,24 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <p class="mb-2">
-                            <strong>Fecha de Nacimiento:</strong> 
-                            <!--{{ $cliente->fecha_nacimiento ? $cliente->fecha_nacimiento->format('d/m/Y') : 'N/A' }} -->
-							{{ $cliente->fecha_nacimiento ? \Carbon\Carbon::parse($cliente->fecha_nacimiento)->format('d/m/Y') : 'N/A' }}
-                            @if($cliente->edad)
-                                <small class="text-muted">({{ $cliente->edad }} años)</small>
-                            @endif
-                        </p>
+<p class="mb-2">
+    <strong>Fecha de Nacimiento:</strong> 
+    {{ $cliente->fecha_nacimiento 
+        ? \Carbon\Carbon::parse($cliente->fecha_nacimiento)->format('d/m/Y') 
+        : 'N/A' }}
+
+    @if($cliente->fecha_nacimiento)
+        @php
+            $fechaNacimiento = \Carbon\Carbon::parse($cliente->fecha_nacimiento);
+            $ahora = \Carbon\Carbon::now();
+            $edad = $fechaNacimiento->diff($ahora);
+        @endphp
+
+        <small class="text-muted">
+            ({{ $edad->y }} años + {{ $edad->m }} meses)
+        </small>
+    @endif
+</p>
                         <p class="mb-2">
                             <strong>Cliente desde:</strong> 
                             {{ $cliente->fecha_contrato ? $cliente->fecha_contrato->format('d/m/Y') : 'N/A' }}
@@ -227,70 +236,29 @@
 						<i class="fas fa-address-book me-2"></i> Datos de Contacto
 					</div>
 					<div class="card-body">
-						@php
-							$contactosAgrupados = [];
-							foreach($cliente->contactos ?? [] as $contacto) {
-								$contactosAgrupados[$contacto->tipo] = $contacto->valor;
-							}
-						@endphp
-						
 						<div class="row">
-							<!-- Columna 1 -->
-							<div class="col-md-6">
-									<i class="fa-solid fa-mobile-screen-button"></i><strong> Celular 1:</strong><br>
-									{{ $contactosAgrupados['celular'] ?? 'No registrado' }}
-									@if(isset($contactosAgrupados['celular']))
-										<a href="tel:{{ $contactosAgrupados['celular'] }}" class="text-decoration-none ms-2">
-											
+							@foreach($cliente->contactos as $contacto)
+								<div class="col-md-6 mb-3">
+									{{-- Mostrar nombre del tipo si existe, si no 'Contacto' --}}
+									<strong>{{ $contacto->tipoContacto->nombre ?? 'Contacto' }}:</strong><br>
+				
+									@if(in_array($contacto->tipoContacto->codigo ?? '', ['CEL', 'TEL']))
+										<a href="tel:{{ $contacto->valor }}" class="text-decoration-none">
+											{{ $contacto->valor }}
 										</a>
-									@endif
-								<br><br>
-								
-									<i class="fas fa-phone text-success"></i><strong> Celular 2:</strong><br>
-									{{ $contactosAgrupados['celular2'] ?? 'No registrado' }}
-									@if(isset($contactosAgrupados['celular2']))
-										<a href="tel:{{ $contactosAgrupados['celular2'] }}" class="text-decoration-none ms-2">
-											<i class="fas fa-phone text-success"></i>
-										</a>
-									@endif
-								<br><br>
-								
-									<i class="fas fa-phone text-success"></i><strong> Tel Casa:</strong><br>
-									{{ $contactosAgrupados['tel_casa'] ?? 'No registrado' }}
-								<br><br>
-							</div>
-							
-							<!-- Columna 2 -->
-							<div class="col-md-6">
-									<strong>Correo 1:</strong><br>
-									@if(isset($contactosAgrupados['correo1']))
-										<a href="mailto:{{ $contactosAgrupados['correo1'] }}" class="text-decoration-none">
-											{{ $contactosAgrupados['correo1'] }}
+									@elseif(($contacto->tipoContacto->codigo ?? '') == 'COR')
+										<a href="mailto:{{ $contacto->valor }}" class="text-decoration-none">
+											{{ $contacto->valor }}
 										</a>
 									@else
-										No registrado
+										{{ $contacto->valor }}
 									@endif
-								<br><br>
-								
-									<strong>Correo 2:</strong><br>
-									@if(isset($contactosAgrupados['correo2']))
-										<a href="mailto:{{ $contactosAgrupados['correo2'] }}" class="text-decoration-none">
-											{{ $contactosAgrupados['correo2'] }}
-										</a>
-									@else
-										No registrado
+				
+									@if($contacto->es_principal)
+										<span class="badge bg-primary ms-2">Principal</span>
 									@endif
-								<br><br>
-								
-									<strong>Correo Personal:</strong><br>
-									@if(isset($contactosAgrupados['correo_personal']))
-										<a href="mailto:{{ $contactosAgrupados['correo_personal'] }}" class="text-decoration-none">
-											{{ $contactosAgrupados['correo_personal'] }}
-										</a>
-									@else
-										No registrado
-									@endif
-							</div>
+								</div>
+							@endforeach
 						</div>
 					</div>
 				</div>
@@ -305,9 +273,10 @@
             <div class="col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
-                        <i class="fas fa-university me-2"></i> Institución Principal
+                        <i class="fas fa-university me-2"></i> IMSS
                     </div>
                     <div class="card-body">
+					@if($cliente->instituto)
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <strong>Institución:</strong><br>
@@ -367,6 +336,13 @@
                                 {{ $cliente->fecha_baja ? $cliente->fecha_baja->format('d/m/Y') : 'N/A' }}
                             </div>
                         </div>
+						                        @else
+                            <div class="text-center py-4">
+                                <i class="fas fa-times-circle fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No se ha registrado Institución</p>
+                                <small>Seleccione "N/A" en la edición si no tiene institución principal</small>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -375,10 +351,10 @@
             <div class="col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
-                        <i class="fas fa-building me-2"></i> Institución 2
+                        <i class="fas fa-building me-2"></i> ISSSTE
                     </div>
                     <div class="card-body">
-                        @if($cliente->instituto2_id == 14)
+                        @if($cliente->instituto2)
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <strong>Institución2:</strong><br>
@@ -408,11 +384,9 @@
                                     @endif
                                 </div>
                                 <div class="col-md-6">
-                                    <strong>Modalidad2:</strong><br>
-                                    {{ $cliente->modalidad_issste == 'NA' ? 'No Aplica' : 
-                                    ($cliente->modalidad_issste == 'CV' ? 'Continuación Voluntaria' : 
-                                    $cliente->modalidad_issste) }}
-                                </div>
+									<strong>Modalidad2:</strong><br>
+									{{ $cliente->modalidad2->nombre ?? 'No asignado' }}
+								</div>
                             </div>
                             
                             <div class="row mb-3">
