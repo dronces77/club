@@ -66,7 +66,8 @@ public function index(Request $request)
         });
     }
 
-    $clientes = $query->paginate(20);
+    $clientes = $query->with(['estatusCliente','instituto','instituto2'])
+                  ->paginate(20);
     $clientes->appends($request->only('search', 'estatus', 'instituto_id'));
 
     // Conteos corregidos
@@ -95,110 +96,132 @@ public function index(Request $request)
      * Búsqueda para autocomplete (usado por el JavaScript)
      * SOLO busca en CLIENTES (tipo_cliente = 'C')
      */
-    public function search(Request $request)
-    {
-        try {
-            // ✅ INICIAL: Solo clientes (tipo_cliente = 'C')
-            $query = Cliente::where('tipo_cliente', 'C')
-                ->with(['instituto', 'instituto2', 'curps', 'rfcs', 'nss'])
-                ->orderBy('created_at', 'desc');
-            
-            // 🔍 BÚSQUEDA EN CAJA DE TEXTO (TODOS LOS CAMPOS SOLICITADOS)
-            if ($request->filled('q')) {
-                $searchTerm = $request->q;
-                
-                $query->where(function($q) use ($searchTerm) {
-                    // ✅ 1. Campos DIRECTOS de la tabla clientes
-                    $q->where('no_cliente', 'like', '%' . $searchTerm . '%')        // No. Cliente
-                      ->orWhere('nombre', 'like', '%' . $searchTerm . '%')          // Nombre
-                      ->orWhere('apellido_paterno', 'like', '%' . $searchTerm . '%') // Apellido Paterno
-                      ->orWhere('apellido_materno', 'like', '%' . $searchTerm . '%') // Apellido Materno
-                      ->orWhere('nss_issste', 'like', '%' . $searchTerm . '%')      // NSS ISSSTE
-                      
-                      // ✅ 2. CURP - tabla relacionada cliente_curps (solo principal)
-                      ->orWhereHas('curps', function($curpQuery) use ($searchTerm) {
-                          $curpQuery->where('curp', 'like', '%' . $searchTerm . '%')
-                                   ->where('es_principal', true);
-                      })
-                      
-                      // ✅ 3. NSS - tabla relacionada cliente_nss (solo principal)
-                      ->orWhereHas('nss', function($nssQuery) use ($searchTerm) {
-                          $nssQuery->where('nss', 'like', '%' . $searchTerm . '%')
-                                  ->where('es_principal', true);
-                      });
-                });
-            }
-            
-            // 📊 FILTRO DE ESTATUS (BÚSQUEDA ANIDADA)
-if ($request->filled('estatus') && $request->estatus !== 'todos') {
-    $query->whereHas('estatusCliente', function($q) use ($request) {
-        $q->where('nombre', $request->estatus);
-    });
+public function search(Request $request)
+{
+    try {
+
+        $query = Cliente::where('tipo_cliente', 'C')
+            ->with([
+                'instituto',
+                'instituto2',
+                'estatusCliente',
+                'curps' => function ($q) {
+                    $q->where('es_principal', true);
+                },
+                'nss' => function ($q) {
+                    $q->where('es_principal', true);
+                }
+            ])
+            ->orderBy('created_at', 'desc');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔍 BÚSQUEDA GENERAL
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('q')) {
+            $searchTerm = trim($request->q);
+
+            $query->where(function ($q) use ($searchTerm) {
+
+                $q->where('no_cliente', 'like', "%{$searchTerm}%")
+                  ->orWhere('nombre', 'like', "%{$searchTerm}%")
+                  ->orWhere('apellido_paterno', 'like', "%{$searchTerm}%")
+                  ->orWhere('apellido_materno', 'like', "%{$searchTerm}%")
+                  ->orWhere('nss_issste', 'like', "%{$searchTerm}%")
+
+                  ->orWhereHas('curps', function ($curpQuery) use ($searchTerm) {
+                      $curpQuery->where('curp', 'like', "%{$searchTerm}%")
+                                ->where('es_principal', true);
+                  })
+
+                  ->orWhereHas('nss', function ($nssQuery) use ($searchTerm) {
+                      $nssQuery->where('nss', 'like', "%{$searchTerm}%")
+                               ->where('es_principal', true);
+                  });
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 FILTRO ESTATUS
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('estatus') && $request->estatus !== 'todos') {
+            $query->where('estatus_cliente_id', $request->estatus);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🏢 FILTRO INSTITUCIÓN (PRINCIPAL O SECUNDARIA)
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('instituto_id') && $request->instituto_id !== 'todos') {
+            $institutoId = $request->instituto_id;
+
+            $query->where(function ($q) use ($institutoId) {
+                $q->where('instituto_id', $institutoId)
+                  ->orWhere('instituto2_id', $institutoId);
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🎯 LIMITAR PARA AUTOCOMPLETE
+        |--------------------------------------------------------------------------
+        */
+
+        $clientes = $query->limit(10)->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📦 FORMATEAR RESPUESTA JSON
+        |--------------------------------------------------------------------------
+        */
+
+        $resultados = $clientes->map(function ($cliente) {
+
+            $curpPrincipal = $cliente->curps->first();
+            $nssPrincipal = $cliente->nss->first();
+
+            return [
+                'id' => $cliente->id,
+                'no_cliente' => $cliente->no_cliente,
+                'nombre_completo' => trim(
+                    "{$cliente->nombre} {$cliente->apellido_paterno} {$cliente->apellido_materno}"
+                ),
+                'curp' => $curpPrincipal->curp ?? null,
+                'nss' => $nssPrincipal->nss ?? null,
+                'estatus' => $cliente->estatusCliente->nombre ?? null,
+                'institucion' => $cliente->instituto->codigo ?? null,
+                'institucion2' => $cliente->instituto2->codigo ?? null,
+                'show_url' => route('clientes.show', $cliente),
+                'edit_url' => route('clientes.edit', $cliente),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'total' => $resultados->count(),
+            'clientes' => $resultados
+        ]);
+
+    } catch (\Exception $e) {
+
+        \Log::error('Error en búsqueda autocomplete: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'clientes' => [],
+            'total' => 0,
+            'message' => 'Error en el servidor'
+        ], 500);
+    }
 }
 
-            
-            // 🏢 FILTRO DE INSTITUCIÓN (BÚSQUEDA ANIDADA)
-            if ($request->filled('instituto_id') && $request->instituto_id !== 'todos') {
-                $institutoId = $request->instituto_id;
-                $query->where(function($q) use ($institutoId) {
-                    $q->where('instituto_id', $institutoId)
-                      ->orWhere('instituto2_id', $institutoId);
-                });
-            }
-            
-            // Limitar resultados para autocomplete
-            $clientes = $query->limit(15)->get();
-            
-            // Formatear respuesta
-            $resultados = $clientes->map(function($cliente) {
-                $nombre = $cliente->nombre ?? '';
-                $apellidoPaterno = $cliente->apellido_paterno ?? '';
-                $apellidoMaterno = $cliente->apellido_materno ?? '';
-                
-                // Obtener CURP principal
-                $curpPrincipal = $cliente->curps
-                    ->where('es_principal', true)
-                    ->first();
-                
-                // Obtener NSS principal
-                $nssPrincipal = $cliente->nss
-                    ->where('es_principal', true)
-                    ->first();
-                
-                return [
-                    'id' => $cliente->id,
-                    'no_cliente' => $cliente->no_cliente ?? 'N/A',
-                    'nombre_completo' => trim("$nombre $apellidoPaterno $apellidoMaterno"),
-                    'nombre' => $nombre,
-                    'apellido_paterno' => $apellidoPaterno,
-                    'apellido_materno' => $apellidoMaterno,
-                    'curp' => $curpPrincipal->curp ?? null,
-                    'nss' => $nssPrincipal->nss ?? null,
-                    'estatus' => $cliente->estatus ?? 'N/A',
-                    'institucion' => $cliente->instituto ? $cliente->instituto->codigo : null,
-                    'institucion2' => $cliente->instituto2 ? $cliente->instituto2->codigo : null,
-                    'show_url' => route('clientes.show', $cliente->id),
-                    'edit_url' => route('clientes.edit', $cliente->id)
-                ];
-            });
-            
-            return response()->json([
-                'clientes' => $resultados,
-                'total' => $clientes->count(),
-                'success' => true
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Error en búsqueda autocomplete: ' . $e->getMessage());
-            
-            return response()->json([
-                'clientes' => [],
-                'total' => 0,
-                'success' => false,
-                'message' => 'Error en el servidor'
-            ], 500);
-        }
-    }
 
     /**
      * Validar campo único (para AJAX)
@@ -415,6 +438,7 @@ public function show(Cliente $cliente)
         'regimen',
         'tramite',
         'modalidad',
+		'modalidad2',
         'instituto2',
         'regimen2',
         'tramite2',
@@ -430,13 +454,13 @@ public function show(Cliente $cliente)
         'nss' => function($query) {
             $query->orderBy('es_principal', 'desc');
         },
-        'contactos' => function($query) {
-            // Ordenar por el nombre del tipo de contacto usando la relación tipoContacto
-            $query->with('tipoContacto')
-                  ->join('catalogo_tipos_contacto', 'cliente_contactos.tipo_contacto_id', '=', 'catalogo_tipos_contacto.id')
-                  ->orderBy('catalogo_tipos_contacto.nombre', 'asc')
-                  ->select('cliente_contactos.*'); // Muy importante para no romper el modelo
-        }
+'contactos' => function($query) {
+    // Ordenar por el nombre del tipo de contacto usando la relación tipoContacto
+    $query->with('tipoContacto')
+          ->join('catalogo_tipos_contacto', 'cliente_contactos.tipo_contacto_id', '=', 'catalogo_tipos_contacto.id')
+          ->orderBy('catalogo_tipos_contacto.nombre', 'asc')
+          ->select('cliente_contactos.*'); // Muy importante para no romper el modelo
+}
     ]);
 
     return view('clientes.show', compact('cliente'));
@@ -677,7 +701,7 @@ public function update(Request $request, Cliente $cliente)
         // ISSSTE
         'instituto2_id' => 'nullable|exists:catalogo_institutos,id',
         'regimen2_id' => 'nullable|exists:catalogo_regimenes,id',
-        'tramite2_id' => 'nullable|exists:catalogo_tramites,id',
+        'tramite2_id' => 'nullable|exists:catalogo_tramites_issste,id',
         'modalidad2_id' => 'nullable|string|max:10',
         'anios_servicio_issste' => 'nullable|integer',
         'fecha_alta_issste' => 'nullable|date',
